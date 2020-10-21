@@ -14,7 +14,7 @@ from tqdm import tqdm
 from IPython import display
 import os
 import gc # Gabage collector interface (to debug stuff)
-#import tracemalloc
+
 # Test to see if cuda is available or not + listed the CUDA devices that are available
 try:
     assert(torch.cuda.is_available())
@@ -38,20 +38,6 @@ step_size = 5000    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
 file_size = 120000
 n_steps = int(file_size / step_size) # number of chunks
-
-# ----------------------------------------debug ------------------------------------------------------------------------------------
-#tracemalloc.start()
-
-
-
-
-
-
-
-
-
-
-
 
 # ------------------------------------------ LOAD THE reindex_TT_df & reindex_y_full PD.DATAFRAME --------------------------------------------------------------------------
 
@@ -116,26 +102,34 @@ print("\nSplitting the data into a training and a testing sample")
 
 indeces = np.arange(len(reindex_TT_df))
 train_indeces, test_indeces, _, _ = train_test_split(indeces, indeces, train_size=0.9, random_state=1543)
-
+print("length test_indeces: {0}".format(len(test_indeces)))
 
 
 #print(len(test_indeces))
 
-#def indices_by_condition(df, train_indices, column_name, lower_bound, upper_bound):
-
+def indices_by_condition(df, train_indices, column_name, lower_bound, upper_bound):
      # define dataframe containing only test values
-#    test_df = df.drop(train_indices)
+    test_df = df.drop(train_indices)
 
               # filter out all values where energy is wrong
-#    filtered_df = test_df[test_df[column_name] >= lower_bound] 
-#    filtered_df = filtered_df[filtered_df[column_name] <= upper_bound] 
+    filtered_df = test_df[test_df[column_name] >= lower_bound] 
+    filtered_df = filtered_df[filtered_df[column_name] <= upper_bound] 
+    return filtered_df.index.tolist()
 
-#    return filtered_df.index.tolist()
-               
+final_test_indeces_1 = indices_by_condition(reindex_y_full,train_indeces,'E', 200,250)
+print("length final_test_indeces_1: {0}".format(len(final_test_indeces_1)))
 
-#final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,400)
-#print(len(final_test_indeces))
-#print(len(train_indeces))
+final_test_indeces_2 = indices_by_condition(reindex_y_full, train_indeces, 'E',250, 300)
+print("length final_test_indeces_2: {0}".format(len(final_test_indeces_2)))
+final_test_indeces_3 = indices_by_condition(reindex_y_full, train_indeces, 'E', 300, 350)
+print("length final_test_indeces_3: {0}".format(len(final_test_indeces_3)))
+final_test_indeces_4 = indices_by_condition(reindex_y_full, train_indeces, 'E', 350, 400)
+print("length final_test_indeces_4: {0}".format(len(final_test_indeces_4))) 
+#print(len(final_test_indeces_1))
+#print(len(final_test_indeces_2))
+#print(len(final_test_indeces_3))
+#print(len(final_test_indeces_4))
+print(len(train_indeces))
 
 
 #reset to empty space
@@ -147,131 +141,86 @@ batch_size = 150
 train_dataset = MyDataset(reindex_TT_df, y, params, train_indeces, n_filters=nb_of_plane)
 train_batch_gen = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
+test_dataset_1 = MyDataset(reindex_TT_df, y, params, final_test_indeces_1, n_filters=nb_of_plane)
+test_batch_gen_1 = torch.utils.data.DataLoader(test_dataset_1, batch_size=batch_size, shuffle=False, num_workers=0)
 
-         
+test_dataset_2 = MyDataset(reindex_TT_df, y, params, final_test_indeces_2, n_filters=nb_of_plane)
+test_batch_gen_2 = torch.utils.data.DataLoader(test_dataset_2, batch_size=batch_size, shuffle=False, num_workers=0)
 
-test_dataset = MyDataset(reindex_TT_df, y, params, test_indeces, n_filters=nb_of_plane)
-test_batch_gen = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+test_dataset_3 = MyDataset(reindex_TT_df, y, params, final_test_indeces_3, n_filters=nb_of_plane)
+test_batch_gen_3 = torch.utils.data.DataLoader(test_dataset_3, batch_size=batch_size, shuffle=False, num_workers=0)
+
+test_dataset_4 = MyDataset(reindex_TT_df, y, params, final_test_indeces_4, n_filters=nb_of_plane)
+test_batch_gen_4 = torch.utils.data.DataLoader(test_dataset_4, batch_size=batch_size, shuffle=False, num_workers=0)
 
 # reset to empty space
 reindex_TT_df=[]
 
 # Saving the true Energy for the test sample
-TrueE_test=y["E"][test_indeces]
-
-#print("TrueE_test:" ,  TrueE_test)
-#TrueE_test=y["E"][test_indices_smallE_range]
-np.save("TrueE_test.npy",TrueE_test)
+TrueE_test_1=y["E"][final_test_indeces_1]
+TrueE_test_2=y["E"][final_test_indeces_2]
+TrueE_test_3=y["E"][final_test_indeces_3]
+TrueE_test_4=y["E"][final_test_indeces_4]
+np.save("TrueE_test_1.npy",TrueE_test_1)
+np.save("TrueE_test_2.npy",TrueE_test_2)
+np.save("TrueE_test_3.npy",TrueE_test_3)
+np.save("TrueE_test_4.npy",TrueE_test_4)
 
 # Creating the network
-net = SNDNet(n_input_filters=nb_of_plane).to(device)
+#net = SNDNet(n_input_filters=nb_of_plane).to(device)
 
 # Loose rate, num epoch and weight decay parameters of our network backprop actions
-lr = 1e-3
-opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
+#lr = 1e-3
+#opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
 #num_epochs = 40
-num_epochs = 40
-
-train_loss = []
-val_accuracy_1 = []
-val_accuracy_2 = []
-
-# Create a directory where to store the 9X0 files
-os.system("mkdir 9X0_file")
 
 
-#Training
-print("\nNow Trainig the network:")
-# Create a .txt file where we will store some info for graphs
-f=open("NN_performance.txt","a")
-f.write("Epoch/Time it took (s)/Loss/Validation energy (%)/Validation distance (%)\n")
-f.close()
-
-class Logger(object):
-    def __init__(self):
-        pass
-
-    def plot_losses(self, epoch, num_epochs, start_time):
-        # Print and save in NN_performance.txt the results for this epoch:
-        print("Epoch {} of {} took {:.3f}s".format(epoch + 1, num_epochs, time.time() - start_time))
-        print("  training loss (in-iteration): \t{:.6f}".format(train_loss[-1]))
-        print("  validation Energy:\t\t{:.4f} %".format(val_accuracy_1[-1]))
-        #print("  validation distance:\t\t{:.4f} %".format(val_accuracy_2[-1]))
-
-        f=open("NN_performance.txt","a")
-        f.write("{};{:.3f};".format(epoch + 1, time.time() - start_time))
-        f.write("\t{:.6f};".format(train_loss[-1]))
-        f.write("\t\t{:.4f}\n".format(val_accuracy_1[-1]))
-        #f.write("\t\t{:.4f}\n".format(val_accuracy_2[-1]))
-        f.close()
 
 
-def run_training(lr, num_epochs, opt):
-    try:
-        for epoch in range(num_epochs):
-            # In each epoch, we do a full pass over the training data:
-            start_time = time.time()
-            net.model.train(True)
-            epoch_loss = 0
-            for X_batch, y_batch in tqdm(train_batch_gen, total = int(len(train_indeces) / batch_size)):
-#            for X_batch, y_batch in train_batch_gen:
-            # train on batch
-                
-                loss = net.compute_loss(X_batch, y_batch)
-                #print(loss)
-                loss.backward()
-                opt.step()
-                opt.zero_grad()
-                epoch_loss += loss.item()
-           
-            train_loss.append(epoch_loss / (len(train_indeces) // batch_size + 1))
 
-            y_score = []
-            with torch.no_grad():
-                for (X_batch, y_batch) in tqdm(test_batch_gen, total = int(len(test_indeces) / batch_size)):
-                    logits = net.predict(X_batch)
-                    y_pred = logits.cpu().detach().numpy()
-                    y_score.extend(y_pred)
-
-            y_score = mean_squared_error(y.iloc[test_indeces], np.asarray(y_score), multioutput='raw_values')
-            val_accuracy_1.append(y_score[0])
-            #val_accuracy_2.append(y_score[1])    
-
-            # Visualize
-            display.clear_output(wait=True)
-            logger.plot_losses(epoch, num_epochs, start_time)
-
-            #Saving network for each 10 epoch
-            if (epoch + 1) % 10 == 0:
-                with open("9X0_file/" + str(epoch) + "_9X0_coordconv.pt", 'wb') as f:
-                    torch.save(net, f)       
-                lr = lr / 2
-                opt = torch.optim.Adam(net.model.parameters(), lr=lr)
-    except KeyboardInterrupt:
-        pass
-
-logger = Logger()
-run_training(lr, num_epochs, opt)
 
 # Saving the prediction at each epoch
 
 # Create a directory where to store the prediction files
 os.system("mkdir PredE_file")
 
-for i in [39]:
+for i in[39]:
     net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
     preds = []
     with torch.no_grad():
-        for (X_batch, y_batch) in test_batch_gen:
+        for (X_batch, y_batch) in test_batch_gen_1:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_1.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
+for i in[39]:
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    preds = []
+    with torch.no_grad():
+        for (X_batch, y_batch) in test_batch_gen_2:
+            preds.append(net.predict(X_batch))
+    ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
+    np.save("PredE_file/" + str(i) + "_PredE_test_2.npy",ans[:, 0])
+    print("Save Prediction for epoch "+ str(i))
 
-#snapshot = tracemalloc.take_snapshot()
-#top_stats = snapshot.statistics('lineno')
+for i in[39]:
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    preds = []
+    with torch.no_grad():
+        for (X_batch, y_batch) in test_batch_gen_3:
+            preds.append(net.predict(X_batch))
+    ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
+    np.save("PredE_file/" + str(i) + "_PredE_test_3.npy",ans[:, 0])
+    print("Save Prediction for epoch "+ str(i))
 
-#print("[ Top 10 ]")
-#for stat in top_stats[:10]:
-#    print(stat)
+for i in[39]:
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    preds = []
+    with torch.no_grad():
+        for (X_batch, y_batch) in test_batch_gen_4:
+            preds.append(net.predict(X_batch))
+    ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
+    np.save("PredE_file/" + str(i) + "_PredE_test_4.npy",ans[:, 0])
+    print("Save Prediction for epoch "+ str(i))
+

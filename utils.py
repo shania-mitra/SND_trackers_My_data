@@ -188,7 +188,10 @@ class DataPreprocess(object):
         showers_sim, showers_mc, initial_indeces= self.extract_showers(showers_data_root)
         MC_df = pd.DataFrame(showers_mc)
         TT_df = pd.DataFrame(showers_sim)
-        # print(MC_df.shape, TT_df.shape)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_rows', None)
+                         
+        print(MC_df.shape, TT_df.shape)
 
         # Remove events, that have hits separated with more then 20ns
         # This is silly cut because of absence of true detector digitisation
@@ -201,6 +204,14 @@ class DataPreprocess(object):
         n_hits = TT_df.X.map(lambda x: len(x))
         TT_df = TT_df[n_hits > n_hits_threshold]
         MC_df = MC_df[n_hits > n_hits_threshold]
+       
+       # save MC_df as showers_mc.txt
+       # save TT_df as showers_sim.txt
+        with open('showers_mc.txt', 'w') as g:
+                             print('Filename:', MC_df, file=g)
+        with open('showers_sim.txt', 'w') as h:
+                             print('Filename:', TT_df, file=h)
+
         #print(MC_df.shape)
 
         # Remove events with a shooted electron with more energy than the threshold energy
@@ -230,7 +241,12 @@ class DataPreprocess(object):
             nu_params[2].append(showers_mc[index]['X'][ele_mask][0])
             nu_params[3].append(showers_mc[index]['Y'][ele_mask][0])
             nu_params[4].append(np.sqrt(showers_mc[index]['PX'][ele_mask][0]*showers_mc[index]['PX'][ele_mask][0]+showers_mc[index]['PY'][ele_mask][0]*showers_mc[index]['PY'][ele_mask][0])/showers_mc[index]['PZ'][ele_mask][0])
-        nu_params = pd.DataFrame(np.array(nu_params).T, columns=["E", "Z", "X", "Y","THETA"])
+        pd.set_option('display.max_rows', 101, 'display.max_columns', 9)
+        nu_params = pd.DataFrame(np.array(nu_params).T, columns=["E","Z","X","Y","THETA"])
+        with open('nu_params.txt', 'w') as f:
+            print( nu_params, file=f)
         TT_df.to_pickle(os.path.join(save_folder, "tt_cleared.pkl"))
+       # unpickled_TT_df = pd.read_pickle("tt_cleared.pkl")
+       # print(unpickled_TT_df)
         nu_params.to_pickle(os.path.join(save_folder, "y_cleared.pkl"))
-
+        #unpickled_nu_params = pd.read_pickle("y_cleared.pkl")

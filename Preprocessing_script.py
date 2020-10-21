@@ -102,6 +102,9 @@ def reading_pkl_files(n_steps,processed_file_path):
     reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
     reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
 
+    print("reindex_TT_df: " , +  reindex_TT_df)
+    print("reindex_y_full " , +  reindex_y_full)
+
     for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
         outpath = processed_file_path + "/{}".format(i+2)
         chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl"))) # add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
@@ -109,6 +112,7 @@ def reading_pkl_files(n_steps,processed_file_path):
         reindex_TT_df = pd.concat([reindex_TT_df,chunklist_TT_df[i+2]], ignore_index=True)
         reindex_y_full = pd.concat([reindex_y_full,chunklist_y_full[i+2]], ignore_index=True)
 
+    pd.set_option('display.max_rows', 200, 'display.max_columns', 10)
     #reset empty space
     chunklist_TT_df = []
     chunklist_y_full = []
@@ -131,6 +135,8 @@ def reading_reduced_pkl_files(n_steps,processed_file_path):
 
     reindex_TT_df_reduced = pd.concat([chunklist_TT_df_reduced[0],chunklist_TT_df_reduced[1]],ignore_index=True)
     reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
+    print("reindex_TT_df_reduced: " , +  reindex_TT_df_reduced)
+    print("reindex_y_full " , +  reindex_y_full)
 
     for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
         outpath = processed_file_path + "/{}".format(i+2)
@@ -148,6 +154,7 @@ def reading_reduced_pkl_files(n_steps,processed_file_path):
 
 # Here we choose the 4X0 geometry, which correspond to SND@LHC pilot run
 # You need to change the X/Y half DIM in the .json file to 26.0 and 21.5
+
 params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
@@ -174,7 +181,7 @@ reduced_dimension.append(7.986)
 reduced_dimension.append(7.712)
 
 params_reduced = Parameters_reduced("4X0")
-
+print(params_reduced)
 # ----------------------------------------- PRODUCE THE tt_cleared.pkl & y_cleared.pkl IN ship_tt_processed_data/ FOLDER -------------------------------------------------
 if(args.step=="step1"):
     print("Step1: producing tt_cleared.pkl & y_cleared.pkl file in " + loc_of_pkl_file)
@@ -431,3 +438,4 @@ if(args.step=="step7"):
         plt.subplot(1,nb_of_plane,i+1)
         plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
     plt.show()
+    plt.savefig("Preprocess_graph.png")
