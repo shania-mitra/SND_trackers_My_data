@@ -85,7 +85,7 @@ class SNDNet(nn.Module):
         
          #print(F.smooth_l1_loss(logits, y_batch).mean())
         
-        return F.smooth_l1_loss(logits, y_batch).mean()
+       # return F.smooth_l1_loss(logits, y_batch).mean()
 
     def predict(self, X_batch):
         self.model.eval()
