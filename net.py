@@ -56,36 +56,11 @@ class SNDNet(nn.Module):
         logits = self.model(X_batch)
         
         l1_loss_tensor = F.l1_loss(logits, y_batch, reduction='none')
-        #l1_loss_tensor.cpu()
-        #y_batch.cpu()
-        
-       # l1_loss_array = np.array(l1_loss_tensor)
-        #l1_loss_list = l1_loss_tensor.tolist()
-        #print(l1_loss_list)
-        #y_batch_list = y_batch.tolist()
-        #print(y_batch_list)
-        #y_batch_array = np.array(y_batch)
-        
-        #norm_l1_loss_list = [x/y for x,y in zip(l1_loss_list,y_batch_list)]
-        #norm_l1_loss_array = np.divide(l1_loss_array,y_batch_array)
         
         norm_l1_loss_tensor = torch.div(l1_loss_tensor,y_batch)
-        #norm_l1_loss_tensor = torch.from_numpy(norm_l1_loss_array)
-        
         return norm_l1_loss_tensor.mean()
-        
-        #size = list(y_batch.size())
-        
-        #norm_l1_loss_tensor = torch.zeros(size)
-       
-        #for i in range(0,size[0]):
-         #3   for j in range(0,size[1]):
-           #     norm_l1_loss_tensor[i][j] = (l1_loss_tensor[i][j])/(y_batch[i][j].item()) 
-        #return norm_l1_loss_tensor.mean()
-        
-         #print(F.smooth_l1_loss(logits, y_batch).mean())
-        
-       # return F.smooth_l1_loss(logits, y_batch).mean()
+
+
 
     def predict(self, X_batch):
         self.model.eval()
