@@ -116,14 +116,14 @@ def indices_by_condition(df, train_indices, column_name, lower_bound, upper_boun
     filtered_df = filtered_df[filtered_df[column_name] <= upper_bound] 
     return filtered_df.index.tolist()
 
-final_test_indeces_1 = indices_by_condition(reindex_y_full,train_indeces,'E', 200,250)
+final_test_indeces_1 = indices_by_condition(reindex_y_full,train_indeces,'E', 220,260)
 print("length final_test_indeces_1: {0}".format(len(final_test_indeces_1)))
 
-final_test_indeces_2 = indices_by_condition(reindex_y_full, train_indeces, 'E',250, 300)
+final_test_indeces_2 = indices_by_condition(reindex_y_full, train_indeces, 'E',260, 300)
 print("length final_test_indeces_2: {0}".format(len(final_test_indeces_2)))
-final_test_indeces_3 = indices_by_condition(reindex_y_full, train_indeces, 'E', 300, 350)
+final_test_indeces_3 = indices_by_condition(reindex_y_full, train_indeces, 'E', 300, 340)
 print("length final_test_indeces_3: {0}".format(len(final_test_indeces_3)))
-final_test_indeces_4 = indices_by_condition(reindex_y_full, train_indeces, 'E', 350, 400)
+final_test_indeces_4 = indices_by_condition(reindex_y_full, train_indeces, 'E', 340, 380)
 print("length final_test_indeces_4: {0}".format(len(final_test_indeces_4))) 
 #print(len(final_test_indeces_1))
 #print(len(final_test_indeces_2))
@@ -161,10 +161,10 @@ TrueE_test_1=y["E"][final_test_indeces_1]
 TrueE_test_2=y["E"][final_test_indeces_2]
 TrueE_test_3=y["E"][final_test_indeces_3]
 TrueE_test_4=y["E"][final_test_indeces_4]
-np.save("TrueE_test_1.npy",TrueE_test_1)
-np.save("TrueE_test_2.npy",TrueE_test_2)
-np.save("TrueE_test_3.npy",TrueE_test_3)
-np.save("TrueE_test_4.npy",TrueE_test_4)
+np.save("TrueE_test_1_220to380.npy",TrueE_test_1)
+np.save("TrueE_test_2_220to380.npy",TrueE_test_2)
+np.save("TrueE_test_3_220to380.npy",TrueE_test_3)
+np.save("TrueE_test_4_220to380.npy",TrueE_test_4)
 
 # Creating the network
 #net = SNDNet(n_input_filters=nb_of_plane).to(device)
@@ -185,42 +185,42 @@ np.save("TrueE_test_4.npy",TrueE_test_4)
 os.system("mkdir PredE_file")
 
 for i in[39]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen_1:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test_1.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_1_220to380.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 for i in[39]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen_2:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test_2.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_2_220to380.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 for i in[39]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen_3:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test_3.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_3_220to380.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 for i in[39]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen_4:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test_4.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_4_220to380.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 

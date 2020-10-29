@@ -36,7 +36,7 @@ params = Parameters_reduced("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !
 processed_file_path = os.path.expandvars("/home/debryas/DS5/ship_tt_processed_data") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
 step_size = 5000    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
-file_size = 120000
+file_size = 1200
 n_steps = int(file_size / step_size) # number of chunks
 
 # ----------------------------------------debug ------------------------------------------------------------------------------------
@@ -71,6 +71,11 @@ chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl")))
 reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
 
 reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
+
+pd.set_option('display.max_columns',10)
+
+print (reindex_TT_df)
+reindex_TT_df.to_csv("reindex_TT_df.csv")
 
 
 for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
@@ -121,19 +126,19 @@ train_indeces, test_indeces, _, _ = train_test_split(indeces, indeces, train_siz
 
 #print(len(test_indeces))
 
-#def indices_by_condition(df, train_indices, column_name, lower_bound, upper_bound):
+def indices_by_condition(df, train_indices, column_name, lower_bound, upper_bound):
 
      # define dataframe containing only test values
-#    test_df = df.drop(train_indices)
+    test_df = df.drop(train_indices)
 
               # filter out all values where energy is wrong
-#    filtered_df = test_df[test_df[column_name] >= lower_bound] 
-#    filtered_df = filtered_df[filtered_df[column_name] <= upper_bound] 
+    filtered_df = test_df[test_df[column_name] >= lower_bound] 
+    filtered_df = filtered_df[filtered_df[column_name] <= upper_bound] 
 
-#    return filtered_df.index.tolist()
+    return filtered_df.index.tolist()
                
 
-#final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,400)
+final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 220,380)
 #print(len(final_test_indeces))
 #print(len(train_indeces))
 
@@ -150,14 +155,14 @@ train_batch_gen = torch.utils.data.DataLoader(train_dataset, batch_size=batch_si
 
          
 
-test_dataset = MyDataset(reindex_TT_df, y, params, test_indeces, n_filters=nb_of_plane)
+test_dataset = MyDataset(reindex_TT_df, y, params, final_test_indeces, n_filters=nb_of_plane)
 test_batch_gen = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
 # reset to empty space
 reindex_TT_df=[]
 
 # Saving the true Energy for the test sample
-TrueE_test=y["E"][test_indeces]
+TrueE_test=y["E"][final_test_indeces]
 
 #print("TrueE_test:" ,  TrueE_test)
 #TrueE_test=y["E"][test_indices_smallE_range]
@@ -170,7 +175,7 @@ net = SNDNet(n_input_filters=nb_of_plane).to(device)
 lr = 1e-3
 opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
 #num_epochs = 40
-num_epochs = 40
+num_epochs = 1
 
 train_loss = []
 val_accuracy_1 = []
@@ -228,12 +233,12 @@ def run_training(lr, num_epochs, opt):
 
             y_score = []
             with torch.no_grad():
-                for (X_batch, y_batch) in tqdm(test_batch_gen, total = int(len(test_indeces) / batch_size)):
+                for (X_batch, y_batch) in tqdm(test_batch_gen, total = int(len(final_test_indeces) / batch_size)):
                     logits = net.predict(X_batch)
                     y_pred = logits.cpu().detach().numpy()
                     y_score.extend(y_pred)
 
-            y_score = mean_squared_error(y.iloc[test_indeces], np.asarray(y_score), multioutput='raw_values')
+            y_score = mean_squared_error(y.iloc[final_test_indeces], np.asarray(y_score), multioutput='raw_values')
             val_accuracy_1.append(y_score[0])
             #val_accuracy_2.append(y_score[1])    
 
@@ -242,8 +247,8 @@ def run_training(lr, num_epochs, opt):
             logger.plot_losses(epoch, num_epochs, start_time)
 
             #Saving network for each 10 epoch
-            if (epoch + 1) % 10 == 0:
-                with open("9X0_file/" + str(epoch) + "_9X0_coordconv.pt", 'wb') as f:
+            if (epoch + 1) % 1 == 0:
+                with open("9X0_file/" + str(epoch) + "_9X0_coordconv_220to380.pt", 'wb') as f:
                     torch.save(net, f)       
                 lr = lr / 2
                 opt = torch.optim.Adam(net.model.parameters(), lr=lr)
@@ -258,14 +263,14 @@ run_training(lr, num_epochs, opt)
 # Create a directory where to store the prediction files
 os.system("mkdir PredE_file")
 
-for i in [39]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+for i in [0]:
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test.npy",ans[:, 0])
+    np.save("PredE_file/" + str(i) + "_PredE_test_220to380.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 

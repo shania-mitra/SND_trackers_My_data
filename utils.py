@@ -188,6 +188,7 @@ class DataPreprocess(object):
         showers_sim, showers_mc, initial_indeces= self.extract_showers(showers_data_root)
         MC_df = pd.DataFrame(showers_mc)
         TT_df = pd.DataFrame(showers_sim)
+#        print (TT_df)
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
                          
