@@ -102,8 +102,8 @@ def reading_pkl_files(n_steps,processed_file_path):
     reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
     reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
 
-    print("reindex_TT_df: " , +  reindex_TT_df)
-    print("reindex_y_full " , +  reindex_y_full)
+   # print("reindex_TT_df: " , +  reindex_TT_df)
+   # print("reindex_y_full " , +  reindex_y_full)
 
     for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
         outpath = processed_file_path + "/{}".format(i+2)
@@ -158,8 +158,8 @@ def reading_reduced_pkl_files(n_steps,processed_file_path):
 params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
-filename = "/home/debryas/DS5/DS5.root"
-loc_of_pkl_file = "$HOME/DS5/ship_tt_processed_data_test"
+filename = "/project/bfys/smitra/DS5/DS5.root"
+loc_of_pkl_file = "/project/bfys/smitra/DS5/ship_tt_processed_data_test"
 processed_file_path = os.path.expandvars(loc_of_pkl_file)
 name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
@@ -196,7 +196,12 @@ if(args.step=="step1"):
         os.system("mkdir -p {}".format(outpath)) # create a directory named 'i' where to store the data files of the 100 chunk
         data_preprocessor.clean_data_and_save(raw_chunk, outpath) # create the tt_cleared.pkl and y_cleared.pkl file in each of the directory
 
+#print(params.snd_params[params.configuration]["TT_POSITIONS"])
+#for j in range(3):
+#    print(params.snd_params[params.configuration]["TT_POSITIONS"][j][0])
+#    print(params.snd_params[params.configuration]["TT_POSITIONS"][j][1])
 # ------------------------------------------ LOAD THE reindex_TT_df & reindex_y_full PD.DATAFRAME --------------------------------------------------------------------------
+
 if(args.step=="step2"):
     
     print("Step2: Display an event and compute the barycenter of each planes")
@@ -371,7 +376,7 @@ if(args.step=="step5"):
 # --------------------------------------------------------PRODUCE THE tt_cleared_reduced.pkl IN ship_tt_processed_data/ FOLDER----------------------------
 
 if(args.step=="step6"):
-
+    print(reduced_dimension)
     print("Step6: Producing the tt_cleared_reduced.pkl files by chunk in " + loc_of_pkl_file)
     
     reindex_TT_df, reindex_y_full = reading_pkl_files(n_steps,processed_file_path)
@@ -394,7 +399,7 @@ if(args.step=="step6"):
 
                 bool_Y = np.array( ((reindex_TT_df.iloc[i+index]["Y"]-barycenter[k][1])  >= -reduced_dimension[1])
                                  & ((reindex_TT_df.iloc[i+index]["Y"]-barycenter[k][1])  <=  reduced_dimension[1]) )
-
+                
                 bool_XY_plane= (bool_XY_plane) ^ (bool_X & bool_Y & bool_plane)
 
                 X_position_bary += (reindex_TT_df.iloc[i+index]['X']-barycenter[k][0])*bool_plane
@@ -415,9 +420,68 @@ if(args.step=="step6"):
                 'AssociatedMCParticle': reindex_TT_df.iloc[i+index]['AssociatedMCParticle'][bool_XY_plane],
                 'ELoss': reindex_TT_df.iloc[i+index]['ELoss'][bool_XY_plane]
             }
-            List_vector.append(TT_resp)
+#            List_vector.append(TT_resp)
+            
+        tt_cleared_reduced = pd.DataFrame(TT_resp)
 
-        tt_cleared_reduced = pd.DataFrame(List_vector)
+#initialise arrays to put x and y in
+        TT_one_x = []
+        TT_one_y = []
+        TT_two_x = []
+        TT_two_y = []
+        TT_three_x = []
+        TT_three_y = []
+        TT_four_x = []
+        TT_four_y = []       
+        
+        print(tt_cleared_reduced['X'][1])        
+        #checks each X and corresponding Z, and categorises each X hit into which TT plane it was in
+        for j in range(len(tt_cleared_reduced['X'])):
+            for i in range(len(tt_cleared_reduced['X'])):
+                if -3041.0 <= tt_cleared_reduced['Z'][j][i] <= -3037.0:
+                    TT_one_x.append(tt_cleared_reduced['X'][j][i])
+                elif -3032.0 < tt_cleared_reduced['Z'][j][i] <= -3027.0:
+                    TT_two_x.append(tt_cleared_reduced['X'][j][i])
+                elif -3022.0 < tt_cleared_reduced['Z'][j][i] <= -3017.0:
+                    TT_three_x.append(tt_cleared_reduced['X'][j][i])
+                else:
+                    TT_four_x.append(tt_cleared_reduced['X'][j][i])
+ 
+        TT_one_x_arr = np.array(TT_one_x)
+        TT_two_x_arr = np.array(TT_two_x)
+        TT_three_x_arr = np.array(TT_three_x)
+        TT_four_x_arr = np.array(TT_four_x)
+
+
+#checks each X and corresponding Z, and categorises each Y hit into which TT plane it was in
+        for k in range(len(tt_cleared_reduced['Y'])):
+            for l in range(len(tt_cleared_reduced['Y'])):
+                if -3041.0 <= tt_cleared_reduced['Z'][k][l] <= -3037.0:
+                    TT_one_y.append(tt_cleared_reduced['Y'][j][i])
+                elif -3032.0 < tt_cleared_reduced['Z'][k][l] <= -3027.0:
+                    TT_two_y.append(tt_cleared_reduced['Y'][k][l])
+                elif -3022.0 < tt_cleared_reduced['Z'][k][l] <= -3017.0:
+                    TT_three_y.append(tt_cleared_reduced['Y'][k][l])
+                else: 
+                    TT_four_y.append(tt_cleared_reduced['Y'][k][l])
+
+
+        
+        TT_one_y_arr = np.array(TT_one_y)
+        print(TT_two_x)
+        TT_two_y_arr = np.array(TT_two_y)
+        print(TT_three_x)
+        TT_three_y_arr = np.array(TT_three_y)
+        print(TT_four_x)
+        TT_four_y_arr = np.array(TT_four_y)  
+
+#Four dictionaries with X and Y hits on each TT plane
+        TT_one = {'X': np.array(TT_one_x), 'Y': np.array(TT_one_y)}
+        TT_two = {'X': np.array(TT_two_x), 'Y': np.array(TT_two_y)}
+        TT_three = {'X': np.array(TT_three_x), 'Y': np.array(TT_three_y)}
+        TT_four = {'X': np.array(TT_three_x), 'Y': np.array(TT_three_y)}
+
+#        tt_cleared_reduced = pd.DataFrame(List_vector)
         tt_cleared_reduced.to_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))
         index = index+len_of_tt_cleared
 
