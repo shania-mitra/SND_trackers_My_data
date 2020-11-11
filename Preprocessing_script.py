@@ -7,7 +7,10 @@ from net import digitize_signal
 from matplotlib import pylab as plt
 import numpy as np
 import root_numpy
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 import pandas as pd
+pd.set_option('display.max_colwidth', -1)
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import time
@@ -17,7 +20,7 @@ import os
 import argparse
 from ROOT import TH1F, TFile
 # Turn off interactive plotting: for long run it makes screwing up everything
-#plt.ioff()
+ #plt.ioff()
 
 # ---------------------------------------------------- Barycenter fonction -------------------------------------------------------------------------------------------------
 
@@ -177,8 +180,12 @@ args = parser.parse_args()
 
 # results of step4
 reduced_dimension = []
-reduced_dimension.append(7.986)
-reduced_dimension.append(7.712)
+#reduced_dimension.append(7.986)
+#reduced_dimension.append(7.712)
+
+
+reduced_dimension.append(21.5)
+reduced_dimension.append(26)
 
 params_reduced = Parameters_reduced("4X0")
 print(params_reduced)
@@ -376,6 +383,8 @@ if(args.step=="step5"):
 # --------------------------------------------------------PRODUCE THE tt_cleared_reduced.pkl IN ship_tt_processed_data/ FOLDER----------------------------
 
 if(args.step=="step6"):
+    
+    
     print(reduced_dimension)
     print("Step6: Producing the tt_cleared_reduced.pkl files by chunk in " + loc_of_pkl_file)
     
@@ -420,66 +429,49 @@ if(args.step=="step6"):
                 'AssociatedMCParticle': reindex_TT_df.iloc[i+index]['AssociatedMCParticle'][bool_XY_plane],
                 'ELoss': reindex_TT_df.iloc[i+index]['ELoss'][bool_XY_plane]
             }
-#            List_vector.append(TT_resp)
-            
+            List_vector.append(TT_resp)
+#        print(List_vector)            
         tt_cleared_reduced = pd.DataFrame(TT_resp)
 
-#initialise arrays to put x and y in
-        TT_one_x = []
-        TT_one_y = []
-        TT_two_x = []
-        TT_two_y = []
-        TT_three_x = []
-        TT_three_y = []
-        TT_four_x = []
-        TT_four_y = []       
-        
-        print(tt_cleared_reduced['X'][1])        
-        #checks each X and corresponding Z, and categorises each X hit into which TT plane it was in
-        for j in range(len(tt_cleared_reduced['X'])):
-            for i in range(len(tt_cleared_reduced['X'])):
-                if -3041.0 <= tt_cleared_reduced['Z'][j][i] <= -3037.0:
-                    TT_one_x.append(tt_cleared_reduced['X'][j][i])
-                elif -3032.0 < tt_cleared_reduced['Z'][j][i] <= -3027.0:
-                    TT_two_x.append(tt_cleared_reduced['X'][j][i])
-                elif -3022.0 < tt_cleared_reduced['Z'][j][i] <= -3017.0:
-                    TT_three_x.append(tt_cleared_reduced['X'][j][i])
-                else:
-                    TT_four_x.append(tt_cleared_reduced['X'][j][i])
- 
-        TT_one_x_arr = np.array(TT_one_x)
-        TT_two_x_arr = np.array(TT_two_x)
-        TT_three_x_arr = np.array(TT_three_x)
-        TT_four_x_arr = np.array(TT_four_x)
+        count_row = tt_cleared_reduced.shape[0]
+#        print(count_row)
+        first_layer_x = []
+        first_layer_y = []
+        second_layer_x = []
+        second_layer_y = []
+        third_layer_x = []
+        third_layer_y = []
+        fourth_layer_x = []
+        fourth_layer_y = []
+
+        for i in range(count_row):
+            if np.logical_and(tt_cleared_reduced.iloc[i,5] >= -3041.0,tt_cleared_reduced.iloc[i,5] <= -3037.0):
+                first_layer_x.append(tt_cleared_reduced.iloc[i,3])
+                first_layer_y.append(tt_cleared_reduced.iloc[i,4])
+            elif np.logical_and(tt_cleared_reduced.iloc[i,5] >= -3032.0,tt_cleared_reduced.iloc[i,5] <= -3027.0):
+                second_layer_x.append(tt_cleared_reduced.iloc[i,3])
+                second_layer_y.append(tt_cleared_reduced.iloc[i,4])
+            elif np.logical_and(tt_cleared_reduced.iloc[i,5] >= -3022.0, tt_cleared_reduced.iloc[i,5] <= -3017.0):
+                third_layer_x.append(tt_cleared_reduced.iloc[i,3])
+                third_layer_y.append(tt_cleared_reduced.iloc[i,4])
+            elif np.logical_and(tt_cleared_reduced.iloc[i,5] >= -3012.0, tt_cleared_reduced.iloc[i,5] <= 3007.0):
+                fourth_layer_x.append(tt_cleared_reduced.iloc[i,3])
+                fourth_layer_y.append(tt_cleared_reduced.iloc[i,4])
+            else:
+                pass
+         
 
 
-#checks each X and corresponding Z, and categorises each Y hit into which TT plane it was in
-        for k in range(len(tt_cleared_reduced['Y'])):
-            for l in range(len(tt_cleared_reduced['Y'])):
-                if -3041.0 <= tt_cleared_reduced['Z'][k][l] <= -3037.0:
-                    TT_one_y.append(tt_cleared_reduced['Y'][j][i])
-                elif -3032.0 < tt_cleared_reduced['Z'][k][l] <= -3027.0:
-                    TT_two_y.append(tt_cleared_reduced['Y'][k][l])
-                elif -3022.0 < tt_cleared_reduced['Z'][k][l] <= -3017.0:
-                    TT_three_y.append(tt_cleared_reduced['Y'][k][l])
-                else: 
-                    TT_four_y.append(tt_cleared_reduced['Y'][k][l])
+        print(len(first_layer_x))
+        print(len(first_layer_y))
+        print(len(second_layer_x))
+        print(len(second_layer_y))
+        print(len(third_layer_x))
+        print(len(third_layer_y))
+        print(len(fourth_layer_x))
+        print(len(fourth_layer_y))
 
-
-        
-        TT_one_y_arr = np.array(TT_one_y)
-        print(TT_two_x)
-        TT_two_y_arr = np.array(TT_two_y)
-        print(TT_three_x)
-        TT_three_y_arr = np.array(TT_three_y)
-        print(TT_four_x)
-        TT_four_y_arr = np.array(TT_four_y)  
-
-#Four dictionaries with X and Y hits on each TT plane
-        TT_one = {'X': np.array(TT_one_x), 'Y': np.array(TT_one_y)}
-        TT_two = {'X': np.array(TT_two_x), 'Y': np.array(TT_two_y)}
-        TT_three = {'X': np.array(TT_three_x), 'Y': np.array(TT_three_y)}
-        TT_four = {'X': np.array(TT_three_x), 'Y': np.array(TT_three_y)}
+   
 
 #        tt_cleared_reduced = pd.DataFrame(List_vector)
         tt_cleared_reduced.to_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))
