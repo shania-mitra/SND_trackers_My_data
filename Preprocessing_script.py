@@ -161,8 +161,8 @@ def reading_reduced_pkl_files(n_steps,processed_file_path):
 params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
-filename = "/project/bfys/smitra/DS5/DS5.root"
-loc_of_pkl_file = "/project/bfys/smitra/DS5/ship_tt_processed_data_test"
+filename = "/dcache/bfys/smitra/DS5/DS5.root"
+loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_test"
 processed_file_path = os.path.expandvars(loc_of_pkl_file)
 name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
@@ -462,14 +462,49 @@ if(args.step=="step6"):
          
 
 
-        print(len(first_layer_x))
-        print(len(first_layer_y))
-        print(len(second_layer_x))
-        print(len(second_layer_y))
-        print(len(third_layer_x))
-        print(len(third_layer_y))
-        print(len(fourth_layer_x))
-        print(len(fourth_layer_y))
+#        print(len(first_layer_x))
+#        print(len(first_layer_y))
+#        print(len(second_layer_x))
+#        print(len(second_layer_y))
+#        print(len(third_layer_x))
+#        print(len(third_layer_y))
+#        print(len(fourth_layer_x))
+#        print(len(fourth_layer_y))
+
+        temp_dict = pd.DataFrame(columns=['X','Y','Z'])       
+
+        new_entries = []
+
+        for x in first_layer_x:
+            for y in first_layer_y:
+                new_entries.append(x)
+                new_entries.append(y)
+                new_entries.append(-3039.0)
+
+        for x in second_layer_x:
+            for y in second_layer_y:
+                new_entries.append(x)
+                new_entries.append(y)
+                new_entries.append(-3029.5)
+
+        for x in third_layer_x:
+            for y in third_layer_y:
+                new_entries.append(x)
+                new_entries.append(y)
+                new_entries.append(-3019.5)
+
+        for x in fourth_layer_x:
+            for y in fourth_layer_y:
+                new_entries.append(x)
+                new_entries.append(y)
+                new_entries.append(-3009.5)
+
+        new_entries = [tuple(new_entries[i:i+3]) for i in range(0, len(new_entries), 3)]
+
+        print(new_entries)
+        new_entries_df = pd.DataFrame(new_entries, columns =['X', 'Y', 'Z'])
+        tt_cleared_reduced = tt_cleared_reduced.append(new_entries_df,sort=True, ignore_index=True)
+
 
    
 
