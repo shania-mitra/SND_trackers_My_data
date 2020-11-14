@@ -396,8 +396,8 @@ if(args.step=="step6"):
         outpath = processed_file_path + "/{}".format(h)
         len_of_tt_cleared = len(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
 #        print(len_of_tt_cleared)
-        for i in range(len_of_tt_cleared):
-#     for i in range(2):
+#        for i in range(len_of_tt_cleared):
+        for i in range(1):
 #            print(params.snd_params[params.configuration]["TT_POSITIONS"][1][0])
 #            print(params.snd_params[params.configuration]["TT_POSITIONS"][1][1])
 #            print(reduced_dimension[0])
@@ -441,6 +441,8 @@ if(args.step=="step6"):
                 'ELoss': reindex_TT_df.iloc[i+index]['ELoss'][bool_XY_plane]
             }
 
+            print(TT_resp)
+
             PX = []
             PY = []
             PZ = []
@@ -475,7 +477,8 @@ if(args.step=="step6"):
                   'PdgCode': np.array(PdgCode),
                   'AssociatedMCParticle': np.array(AssociatedMCParticle),
                   'ELoss': np.array(ELoss)
-            }    
+            }            
+            print(TT_resp)    
        
             first_layer_x = []
             first_layer_y = []
@@ -525,123 +528,9 @@ if(args.step=="step6"):
                     TT_resp['Z'] = np.append(TT_resp['Z'],-3009.5)
 
             List_vector.append(TT_resp)
-
         tt_cleared_reduced = pd.DataFrame(List_vector)
         tt_cleared_reduced.to_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))
         index = index+len_of_tt_cleared
-
-'''
-
-            list_values = [TT_resp[k] for k in TT_resp]
-            X_point = list_values[3]
-            Y_point = list_values[4]
-            Z_point = list_values[5]
-
-            new_entries_x = []
-            new_entries_y = []
-            new_entries_z = []
-
-            for x in X_point:
-                for y,z in zip(Y_point,Z_point):
-                    new_entries_x.append(x)
-                    new_entries_y.append(y)
-                    new_entries_z.append(z)
-
-            for i in new_entries_x:
-                TT_resp['X'].append(i)
-
-            for j in new_entries_y:
-                TT_resp['Y'].append(j)
-
-            for k in new_entries_z:
-                TT_resp['Z'].append(k)
-
-            List_vector.append(TT_resp)
-
-
-
-
-
-
-
-#            print("LIST_VECTOR" , List_vector)            
-            tt_cleared_df = pd.DataFrame(TT_resp)
-#            print("TT_CLEARED_DF" , tt_cleared_df)
-            count_row = tt_cleared_df.shape[0]
-#        print(count_row)
-            first_layer_x = []
-            first_layer_y = []
-            second_layer_x = []
-            second_layer_y = []
-            third_layer_x = []
-            third_layer_y = []
-            fourth_layer_x = []
-            fourth_layer_y = []
-
-            for i in range(count_row):
-                if np.logical_and(tt_cleared_df.iloc[i,5] >= -3041.0,tt_cleared_df.iloc[i,5] <= -3037.0):
-                    first_layer_x.append(tt_cleared_df.iloc[i,3])
-                    first_layer_y.append(tt_cleared_df.iloc[i,4])
-                elif np.logical_and(tt_cleared_df.iloc[i,5] >= -3032.0,tt_cleared_df.iloc[i,5] <= -3027.0):
-                    second_layer_x.append(tt_cleared_df.iloc[i,3])
-                    second_layer_y.append(tt_cleared_df.iloc[i,4])
-                elif np.logical_and(tt_cleared_df.iloc[i,5] >= -3022.0, tt_cleared_df.iloc[i,5] <= -3017.0):
-                    third_layer_x.append(tt_cleared_df.iloc[i,3])
-                    third_layer_y.append(tt_cleared_df.iloc[i,4])
-                elif np.logical_and(tt_cleared_df.iloc[i,5] >= -3012.0, tt_cleared_df.iloc[i,5] <= 3007.0):
-                    fourth_layer_x.append(tt_cleared_df.iloc[i,3])
-                    fourth_layer_y.append(tt_cleared_df.iloc[i,4])
-                else:
-                    pass
-         
-
-
-#        print(len(first_layer_x))
-#        print(len(first_layer_y))
-#        print(len(second_layer_x))
-#        print(len(second_layer_y))
-#        print(len(third_layer_x))
-#        print(len(third_layer_y))
-#        print(len(fourth_layer_x))
-#        print(len(fourth_layer_y))
-
-            temp_dict = pd.DataFrame(columns=['X','Y','Z'])       
-
-            new_entries = []
-
-            for x in first_layer_x:
-                for y in first_layer_y:
-                    new_entries.append(x)
-                    new_entries.append(y)
-                    new_entries.append(-3039.0)
-
-            for x in second_layer_x:
-                for y in second_layer_y:
-                    new_entries.append(x)
-                    new_entries.append(y)
-                    new_entries.append(-3029.5)
-
-            for x in third_layer_x:
-                for y in third_layer_y:
-                    new_entries.append(x)
-                    new_entries.append(y)
-                    new_entries.append(-3019.5)
-
-            for x in fourth_layer_x:
-                for y in fourth_layer_y:
-                    new_entries.append(x)
-                    new_entries.append(y)
-                    new_entries.append(-3009.5)
-
-            new_entries = [tuple(new_entries[i:i+3]) for i in range(0, len(new_entries), 3)]
-
-#            print(new_entries)
-            new_entries_df = pd.DataFrame(new_entries, columns =['X', 'Y', 'Z'])
-            tt_cleared_reduced = tt_cleared_df.append(new_entries_df,sort=True, ignore_index=True)
-#            List_vect_dict = tt_cleared_df.to_dict()
-#            List_vector.append(List_vect_dict)
-
-'''   
 
     
 
