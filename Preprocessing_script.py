@@ -92,7 +92,7 @@ def compute_barycenter_of_event(event_data, params):
 def reading_pkl_files(n_steps,processed_file_path):
     chunklist_TT_df = []  # list of the TT_df file of each chunk
     chunklist_y_full = [] # list of the y_full file of each chunk
-
+    
     # It is reading and analysing data by chunk instead of all at the time (memory leak problem)
     #First 2 
     outpath = processed_file_path + "/{}".format(0)
@@ -104,7 +104,7 @@ def reading_pkl_files(n_steps,processed_file_path):
 
     reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
     reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
-
+    
    # print("reindex_TT_df: " , +  reindex_TT_df)
    # print("reindex_y_full " , +  reindex_y_full)
 
@@ -141,8 +141,8 @@ def reading_reduced_pkl_files(n_steps,processed_file_path):
     reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_index=True)
     print("reindex_TT_df_reduced: " , +  reindex_TT_df_reduced)
     print("reindex_y_full " , +  reindex_y_full)
-
-    for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
+    
+    for i in tqdm(range(n_steps - 2)):  # tqdm: make your loops show a progress bar in terminal
         outpath = processed_file_path + "/{}".format(i+2)
         chunklist_TT_df_reduced.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))) #add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
         chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl"))) # add all the y_cleared.pkl files read_pickle and add to the chunklist_y_full list
@@ -169,20 +169,20 @@ name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
 
 # Usualy, Data file is too large to be read in one time, that the reason why we read it by "chunk" of step_size events
-step_size = 1    # number of event in a chunk
-file_size = 2  # number of events to be analyse. Maximum number for DS5.root is 200'000
+step_size = 2    # number of event in a chunk
+file_size = 4  # number of events to be analyse. Maximum number for DS5.root is 200'000
 
 n_steps = int(file_size / step_size) # number of chunks
-nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
-
+#nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
+nb_of_plane = 1
 parser = argparse.ArgumentParser()
 parser.add_argument("step", help="As the code is a bit long, it is better to run it by step, to make sure everything works fine on the fly. First, run python Preprocessing_script.py step1, then Preprocessing_script.py step2, etc until stepX")
 args = parser.parse_args()
 
 # results of step4
 reduced_dimension = []
-reduced_dimension.append(7.9859)
-reduced_dimension.append(7.71148)
+reduced_dimension.append(7.6834)
+reduced_dimension.append(7.4434)
 
 
 #reduced_dimension.append(21.5)
@@ -190,6 +190,7 @@ reduced_dimension.append(7.71148)
 
 params_reduced = Parameters_reduced("4X0")
 print(params_reduced)
+#params = params_reduced
 # ----------------------------------------- PRODUCE THE tt_cleared.pkl & y_cleared.pkl IN ship_tt_processed_data/ FOLDER -------------------------------------------------
 if(args.step=="step1"):
     print("Step1: producing tt_cleared.pkl & y_cleared.pkl file in " + loc_of_pkl_file)
@@ -221,12 +222,15 @@ if(args.step=="step2"):
     #index of the event you want to plot the signal
     index= 0 
 
-    response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
-    print("Response shape:",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
+    response, response_y  = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
+#    response = np.expand_dims(response, axis=0)
+    print("Response shape :",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
+    print("Response shape Y :",response_y.shape)
     plt.figure(figsize=(18,nb_of_plane))
     for i in range(nb_of_plane):
         plt.subplot(1,nb_of_plane,i+1)
         plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
+#        plt.imshow(response_y[i].astype("uint8") * 255, cmap='gray')
     plt.show()
 
     # ----------------------------------------------------Compute the barycenter of an event----------------------------------------------------------------
@@ -444,7 +448,7 @@ if(args.step=="step6"):
             }
 #            print("PRE GHOST X HITS",np.shape(TT_resp['X']))
 #            print("PRE GHOST Y  HITS",np.shape(TT_resp['Y']))
-            '''
+            
             PX = []
             PY = []
             PZ = []
@@ -456,7 +460,7 @@ if(args.step=="step6"):
             AssociatedMCParticle = []
             ELoss = []
             
-            for i in range(10):
+            for i in range(20):
                 PX.append(TT_resp['PX'][i])
                 PY.append(TT_resp['PY'][i])
                 PZ.append(TT_resp['PZ'][i])
@@ -480,12 +484,13 @@ if(args.step=="step6"):
                   'AssociatedMCParticle': np.array(AssociatedMCParticle),
                   'ELoss': np.array(ELoss)
             }
-#            print("PRE GHOST HITS LENGTH OF X NUMPY ARRAY",(TT_resp['X']))
+            
+#            print("TT_RESP LENGTH",len(TT_resp))
 #            print("PRE GHOST HITS LENGTH OF Y NUMPY ARRAY",(TT_resp['Y']))           
 #            print(TT_resp)    
 #            print("PRE GHOST HITS LENGTH OF X NUMPY ARRAY",(TT_resp['X']))
 #            print("PRE GHOST HITS LENGTH OF Y NUMPY ARRAY",(TT_resp['Y']))
-            '''
+            
 
             first_layer_x = []
             first_layer_y = []
@@ -495,6 +500,9 @@ if(args.step=="step6"):
             third_layer_y = []
             fourth_layer_x = []
             fourth_layer_y = []
+            
+
+
 
             for i in range(len(TT_resp['Z'])):
                 if np.logical_and(TT_resp['Z'][i] >= -3041.0, TT_resp['Z'][i]<= -3037.0):
@@ -516,12 +524,15 @@ if(args.step=="step6"):
                     TT_resp['Y'] = np.append(TT_resp['Y'],y)
                     TT_resp['Z'] = np.append(TT_resp['Z'],-3039.0)
 
+            print("FIRST_LAYER_X" , first_layer_x)
+                        
             for x in second_layer_x:
                 for y in second_layer_y:
                     TT_resp['X'] = np.append(TT_resp['X'],x)
                     TT_resp['Y'] = np.append(TT_resp['Y'],y)
                     TT_resp['Z'] = np.append(TT_resp['Z'],-3029.5)
 
+            print("FIRST_LAYER_Y" , first_layer_y)
             for x in third_layer_x:
                 for y in third_layer_y:
                     TT_resp['X'] = np.append(TT_resp['X'],x)
@@ -533,6 +544,11 @@ if(args.step=="step6"):
                     TT_resp['X'] = np.append(TT_resp['X'],x)
                     TT_resp['Y'] = np.append(TT_resp['Y'],y)
                     TT_resp['Z'] = np.append(TT_resp['Z'],-3009.5)
+
+            
+
+
+
 #            print("POST GHOST X HIT", TT_resp['X'])
 #            print("POST GHOST Y HITS",TT_resp['Y'])
 #            print("POST GHOST Y HITS",TT_resp['Y'][0])
