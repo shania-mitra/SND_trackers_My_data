@@ -42,7 +42,7 @@ class SNDNet(nn.Module):
             #Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
-            nn.Linear(256, 1),
+            nn.Linear(128, 1),
             # nn.ReLU(),
             # nn.Dropout(p=0.5),
             # nn.Linear(512, 512),
@@ -109,19 +109,91 @@ def digitize_signal(event, params, filters=1):
     :param filters: Number of TargetTrackers in the simulation
     :return: numpy tensor of shape (n_filters, H, W).
     """
+    print(event)
+    '''
     shape = (filters,
-             int(np.ceil(params.snd_params["Y_HALF_SIZE"] * 2 * CM_TO_MUM /
+            ( int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
                          params.snd_params["RESOLUTION"])),
              int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
-                         params.snd_params["RESOLUTION"])))
+                         params.snd_params["RESOLUTION"]))))  
+
     response = np.zeros(shape)
+    print("RESPONSE",response)
+
+
+    for i in range(len(event['Z'])):
+        if np.logical_and(event['Z'][i] >= -3041.0, event['Z'][i]<= -3037.0):
+            event['Z'][i] = -3035.0
+        elif np.logical_and(event['Z'][i] >= -3032.0, event['Z'][i]<= -3027.0):
+            event['Z'][i] = -3027.0
+        elif np.logical_and(event['Z'][i] >= -3022.0, event['Z'][i] <= -3017.0):
+            event['Z'][i] = -3019.0
+        elif np.logical_and(event['Z'][i] >= -3012.0, event['Z'][i] <= -3007.0): 
+            event['Z'][i] = -3011.0
+        else:
+            pass
     
     for x_index, y_index, z_pos in zip(np.floor((event['X'] + params.snd_params["X_HALF_SIZE"]) * CM_TO_MUM /
                                                 params.snd_params["RESOLUTION"]).astype(int),
-                                       np.floor((event['Y'] + params.snd_params["Y_HALF_SIZE"]) * CM_TO_MUM /
+                                       np.floor((event['Y'] + params.snd_params["X_HALF_SIZE"]) * CM_TO_MUM /
                                                 params.snd_params["RESOLUTION"]).astype(int),
                                        event['Z']):
+       
+       # print("x_index", x_index)
+       # print("y_index", y_index)
+       # print("z_pos", z_pos)
+       # print("SHAPE_1" , shape[1] - y_index - 1)
+       # print("X_INDEX", x_index)
+       # print("PARAMS" , params.tt_map[bisect_left(params.tt_positions_ravel, z_pos)])
+       
         response[params.tt_map[bisect_left(params.tt_positions_ravel, z_pos)],
                  shape[1] - y_index - 1,
                  x_index] += 1
-    return response
+
+#        response[2,shape[1] - y_index -1, z_pos]+=1,
+    '''
+    
+    shape = (filters, 
+             int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
+                         params.snd_params["RESOLUTION"])),
+             int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
+                         params.snd_params["RESOLUTION"])))
+#    print(int(np.ceil(Z_HALF_SIZE * 2 * CM_TO_MUM/ params.snd_params["RESOLUTION"])))
+#    print(int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
+#                     params.snd_params["RESOLUTION"])))
+
+    print(shape)
+    response = np.zeros(shape)
+    response_y = np.zeros(shape)
+
+    for i in range(len(event['Z'])):
+        if np.logical_and(event['Z'][i] >= -3041.0, event['Z'][i]<= -3037.0):
+            event['Z'][i] = -3020.0
+        elif np.logical_and(event['Z'][i] >= -3032.0, event['Z'][i]<= -3027.0):
+            event['Z'][i] = -3015.0
+        elif np.logical_and(event['Z'][i] >= -3022.0, event['Z'][i] <= -3017.0):
+            event['Z'][i] = -3010.0
+        elif np.logical_and(event['Z'][i] >= -3012.0, event['Z'][i] <= -3007.0):
+            event['Z'][i] = -3005.0
+        else:
+            pass
+
+    min_z_value = np.amin(event['Z'])
+    event['Z'] = event['Z'] - min_z_value
+    max_Z_val = np.max(event['Z'])
+    event['Z'] = (event['Z']/max_Z_val)*200
+
+    for x_index,y_index, z_pos in zip(np.floor((event['X'] + params.snd_params["X_HALF_SIZE"]) * CM_TO_MUM /
+                                       params.snd_params["RESOLUTION"]).astype(int),
+                                      np.floor((event['Y'] + params.snd_params["X_HALF_SIZE"]) * CM_TO_MUM /
+                                       params.snd_params["RESOLUTION"]).astype(int),
+                                      np.floor( event['Z']).astype(int)):
+#                                      np.floor((event['Z'] + Z_HALF_SIZE) / params.snd_params["RESOLUTION"]).astype(int)) :
+
+ 
+        response[0,x_index,z_pos] += 1
+        response_y[0,z_pos,shape[1] - y_index - 1]+=1
+
+    print("PARAMS.TT_POSITIONS_RAVEL", params.tt_positions_ravel)
+    print(shape[1])
+    return response, response_y
