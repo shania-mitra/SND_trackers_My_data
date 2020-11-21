@@ -163,33 +163,33 @@ params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
 filename = "/dcache/bfys/smitra/DS5/DS5.root"
-loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_1event"
+loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_xzyz"
 processed_file_path = os.path.expandvars(loc_of_pkl_file)
 name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
 
 # Usualy, Data file is too large to be read in one time, that the reason why we read it by "chunk" of step_size events
-step_size = 2    # number of event in a chunk
-file_size = 4  # number of events to be analyse. Maximum number for DS5.root is 200'000
+step_size = 3750    # number of event in a chunk
+file_size = 150000  # number of events to be analyse. Maximum number for DS5.root is 200'000
 
 n_steps = int(file_size / step_size) # number of chunks
-#nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
-nb_of_plane = 1
+nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
+#nb_of_plane = 2
 parser = argparse.ArgumentParser()
 parser.add_argument("step", help="As the code is a bit long, it is better to run it by step, to make sure everything works fine on the fly. First, run python Preprocessing_script.py step1, then Preprocessing_script.py step2, etc until stepX")
 args = parser.parse_args()
 
 # results of step4
 reduced_dimension = []
-reduced_dimension.append(7.6834)
-reduced_dimension.append(7.4434)
+reduced_dimension.append(7.914)
+reduced_dimension.append(7.6758)
 
 
 #reduced_dimension.append(21.5)
 #reduced_dimension.append(26)
 
 params_reduced = Parameters_reduced("4X0")
-print(params_reduced)
+#print(params_reduced)
 #params = params_reduced
 # ----------------------------------------- PRODUCE THE tt_cleared.pkl & y_cleared.pkl IN ship_tt_processed_data/ FOLDER -------------------------------------------------
 if(args.step=="step1"):
@@ -220,17 +220,14 @@ if(args.step=="step2"):
     #----------------------------------------- Ploting figure of the 6 component of TT_df --------------------------------------------------------------------------------------
 
     #index of the event you want to plot the signal
-    index= 0 
+    index= 7
 
-    response, response_y  = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
-#    response = np.expand_dims(response, axis=0)
+    response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
     print("Response shape :",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
-    print("Response shape Y :",response_y.shape)
     plt.figure(figsize=(18,nb_of_plane))
     for i in range(nb_of_plane):
         plt.subplot(1,nb_of_plane,i+1)
         plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
-#        plt.imshow(response_y[i].astype("uint8") * 255, cmap='gray')
     plt.show()
 
     # ----------------------------------------------------Compute the barycenter of an event----------------------------------------------------------------
@@ -332,7 +329,7 @@ if(args.step=="step5"):
 
     reindex_TT_df, reindex_y_full = reading_pkl_files(n_steps,processed_file_path)
     
-    number_of_it = 1
+    number_of_it = 100
 #    number_of_it = 6
     ratio = []
     noisy_events_index = []
@@ -395,19 +392,12 @@ if(args.step=="step6"):
     print("Step6: Producing the tt_cleared_reduced.pkl files by chunk in " + loc_of_pkl_file)
     
     reindex_TT_df, reindex_y_full = reading_pkl_files(n_steps,processed_file_path)
-#    print(reindex_TT_df)
     index=0
     for h in tqdm(range(0,n_steps)):
         List_vector = []
         outpath = processed_file_path + "/{}".format(h)
         len_of_tt_cleared = len(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
-#        print(len_of_tt_cleared)
         for i in range(len_of_tt_cleared):
-  #      for i in range(1):
-#            print(params.snd_params[params.configuration]["TT_POSITIONS"][1][0])
-#            print(params.snd_params[params.configuration]["TT_POSITIONS"][1][1])
-#            print(reduced_dimension[0])
-#            print(reduced_dimension[1])
             barycenter = compute_barycenter_of_event(reindex_TT_df.iloc[i+index], params)
             bool_XY_plane= [False for j in range(len(reindex_TT_df.iloc[i+index]["Z"]))]
             X_position_bary = np.zeros(len(reindex_TT_df.iloc[i+index]['X']))
@@ -428,9 +418,6 @@ if(args.step=="step6"):
 
                 Y_position_bary += (reindex_TT_df.iloc[i+index]['Y']-barycenter[k][1])*bool_plane
 
-#            print(X_position_bary[bool_XY_plane])
-#            print(Y_position_bary[bool_XY_plane])
-#            print(reindex_TT_df.iloc[i+index]['Z'][bool_XY_plane])
 
             TT_resp = {
                 'PX': reindex_TT_df.iloc[i+index]['PX'][bool_XY_plane],
@@ -446,9 +433,8 @@ if(args.step=="step6"):
                 'AssociatedMCParticle': reindex_TT_df.iloc[i+index]['AssociatedMCParticle'][bool_XY_plane],
                 'ELoss': reindex_TT_df.iloc[i+index]['ELoss'][bool_XY_plane]
             }
-#            print("PRE GHOST X HITS",np.shape(TT_resp['X']))
-#            print("PRE GHOST Y  HITS",np.shape(TT_resp['Y']))
-            
+
+            '''
             PX = []
             PY = []
             PZ = []
@@ -485,11 +471,6 @@ if(args.step=="step6"):
                   'ELoss': np.array(ELoss)
             }
             
-#            print("TT_RESP LENGTH",len(TT_resp))
-#            print("PRE GHOST HITS LENGTH OF Y NUMPY ARRAY",(TT_resp['Y']))           
-#            print(TT_resp)    
-#            print("PRE GHOST HITS LENGTH OF X NUMPY ARRAY",(TT_resp['X']))
-#            print("PRE GHOST HITS LENGTH OF Y NUMPY ARRAY",(TT_resp['Y']))
             
 
             first_layer_x = []
@@ -544,15 +525,8 @@ if(args.step=="step6"):
                     TT_resp['X'] = np.append(TT_resp['X'],x)
                     TT_resp['Y'] = np.append(TT_resp['Y'],y)
                     TT_resp['Z'] = np.append(TT_resp['Z'],-3009.5)
+            '''
 
-            
-
-
-
-#            print("POST GHOST X HIT", TT_resp['X'])
-#            print("POST GHOST Y HITS",TT_resp['Y'])
-#            print("POST GHOST Y HITS",TT_resp['Y'][0])
-#            print("POST GHOST Y HITS",TT_resp['Y'][1])
             List_vector.append(TT_resp)
         tt_cleared_reduced = pd.DataFrame(List_vector)
        # print(tt_cleared_reduced.shape)
@@ -570,7 +544,7 @@ if(args.step=="step7"):
 
     #  !!!!!!!!!!!!!!!!!! CHANGE THE PARAMETER FILE FOR X AND Y DIMENSION  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     #index of the event you want to plot the signal
-    index= 0
+    index= 7
     response = digitize_signal(reindex_TT_df_reduced.iloc[index], params=params_reduced, filters=nb_of_plane)
     print("Response shape:",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
     plt.figure(figsize=(18,nb_of_plane))
