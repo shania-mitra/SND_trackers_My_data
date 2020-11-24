@@ -1,7 +1,7 @@
 # --------------------------------------------------------------IMPORT AND OPTIONS FOR PREPROCESSING ----------------------------------------------------------------------
 # Import Class from utils.py & net.py file
 from utils import DataPreprocess, Parameters, Parameters_reduced
-from net import digitize_signal
+from net import digitize_signal, compress_digitize_signal
 
 # Import usfull module 
 from matplotlib import pylab as plt
@@ -19,6 +19,7 @@ from IPython import display
 import os
 import argparse
 from ROOT import TH1F, TFile
+from PIL import Image
 # Turn off interactive plotting: for long run it makes screwing up everything
  #plt.ioff()
 
@@ -119,7 +120,7 @@ def reading_pkl_files(n_steps,processed_file_path):
     #reset empty space
     chunklist_TT_df = []
     chunklist_y_full = []
-
+    print("LENGTH REINDEX_TT", len(reindex_TT_df.axes[0])) 
     return reindex_TT_df, reindex_y_full
 
 # ------------------------------------------ Reading the tt_cleared_reduced.pkl & y_cleared.pkl files by chunk ------------------------------------------------------------------
@@ -163,7 +164,7 @@ params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
 filename = "/dcache/bfys/smitra/DS5/DS5.root"
-loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_xzyz"
+loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed"
 processed_file_path = os.path.expandvars(loc_of_pkl_file)
 name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
@@ -173,8 +174,8 @@ step_size = 3750    # number of event in a chunk
 file_size = 150000  # number of events to be analyse. Maximum number for DS5.root is 200'000
 
 n_steps = int(file_size / step_size) # number of chunks
-nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
-#nb_of_plane = 2
+#nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
+nb_of_plane = 2
 parser = argparse.ArgumentParser()
 parser.add_argument("step", help="As the code is a bit long, it is better to run it by step, to make sure everything works fine on the fly. First, run python Preprocessing_script.py step1, then Preprocessing_script.py step2, etc until stepX")
 args = parser.parse_args()
@@ -220,7 +221,7 @@ if(args.step=="step2"):
     #----------------------------------------- Ploting figure of the 6 component of TT_df --------------------------------------------------------------------------------------
 
     #index of the event you want to plot the signal
-    index= 7
+    index= 7499
 
     response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
     print("Response shape :",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
@@ -229,7 +230,16 @@ if(args.step=="step2"):
         plt.subplot(1,nb_of_plane,i+1)
         plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
     plt.show()
-
+    '''
+    plt.savefig("event.png")
+    img_file = Image.open('event.png')
+    img_file = img_file.convert('1')
+    img_file.save("result.png")
+    img_baw = Image.open('result.png')
+    img_baw.show()
+    #img_binary = cv2.threshold(img_grey, thresh, 255, cv2.THRESH_BINARY)[1]
+    #cv2.imwrite('black-and-white.png',img_binary)
+    '''
     # ----------------------------------------------------Compute the barycenter of an event----------------------------------------------------------------
 
     barycenter = compute_barycenter_of_event(reindex_TT_df.iloc[index], params)

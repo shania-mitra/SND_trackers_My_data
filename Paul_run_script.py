@@ -32,11 +32,11 @@ device = torch.device("cuda", 0)
 plt.ioff()
 
 # Here we choose the geometry with 9 time the radiation length
-params = Parameters_reduced("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!!!!!!!!
-processed_file_path = os.path.expandvars("/home/debryas/DS5/ship_tt_processed_data") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
+params = Parameters("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!!!!!!!!
+processed_file_path = os.path.expandvars("/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
 step_size = 5000    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
-file_size = 1200
+file_size = 120000
 n_steps = int(file_size / step_size) # number of chunks
 
 # ----------------------------------------debug ------------------------------------------------------------------------------------
@@ -62,10 +62,12 @@ chunklist_y_full = [] # list of the y_full file of each chunk
 print("\nReading the tt_cleared_reduced.pkl & y_cleared.pkl files by chunk")
 #First 2 
 outpath = processed_file_path + "/{}".format(0)
-chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
 chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl")))
 outpath = processed_file_path + "/{}".format(1)
-chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
 chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl")))
 
 reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
@@ -74,13 +76,13 @@ reindex_y_full = pd.concat([chunklist_y_full[0],chunklist_y_full[1]], ignore_ind
 
 pd.set_option('display.max_columns',10)
 
-print (reindex_TT_df)
+#print (reindex_TT_df)
 reindex_TT_df.to_csv("reindex_TT_df.csv")
 
 
 for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
     outpath = processed_file_path + "/{}".format(i+2)
-    chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))) # add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
+    chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl"))) # add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
     chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl"))) # add all the y_cleared.pkl files read_pickle and add to the chunklist_y_full list
     reindex_TT_df = pd.concat([reindex_TT_df,chunklist_TT_df[i+2]], ignore_index=True)
     reindex_y_full = pd.concat([reindex_y_full,chunklist_y_full[i+2]], ignore_index=True)
@@ -90,20 +92,20 @@ for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in
 # reset to empty space
 chunklist_TT_df = []
 chunklist_y_full = []
-nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
-
+#nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
+nb_of_plane = 2
 #----------------------------------------- Ploting figure of the 6 component of TT_df
 '''
-index=2
+index=1
 response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
 print("Response shape:",response.shape) # gives  (6, 250, 298) unreduced and (6, 132, 154) for reduced data --> change the network 
-number_of_paramater = response.shape[0]
-plt.figure(figsize=(18,number_of_paramater))
-for i in range(number_of_paramater):
-    plt.subplot(1,number_of_paramater,i+1)
+#number_of_paramater = response.shape[0]
+plt.figure(figsize=(18,nb_of_plane))
+for i in range(nb_of_plane):
+    plt.subplot(1,nb_of_plane,i+1)
     plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
+plt.show()
 '''
-
 # True value of NRJ/dist for each true electron event
 #y = reindex_y_full[["E", "Z","THETA"]]
 y = reindex_y_full[["E"]]
@@ -120,6 +122,7 @@ y["E"] *= NORM
 print("\nSplitting the data into a training and a testing sample")
 
 indeces = np.arange(len(reindex_TT_df))
+#print(indeces)
 train_indeces, test_indeces, _, _ = train_test_split(indeces, indeces, train_size=0.9, random_state=1543)
 
 
@@ -138,7 +141,7 @@ def indices_by_condition(df, train_indices, column_name, lower_bound, upper_boun
     return filtered_df.index.tolist()
                
 
-final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 220,380)
+final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,400)
 #print(len(final_test_indeces))
 #print(len(train_indeces))
 
@@ -147,11 +150,11 @@ final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 220,
 reindex_y_full = []
 
 #batch_size = 512
-batch_size = 150
+batch_size = 300
 
 train_dataset = MyDataset(reindex_TT_df, y, params, train_indeces, n_filters=nb_of_plane)
 train_batch_gen = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-
+#print("TRAIN_BATCH_GEN" , train_batch_gen)
 
          
 
@@ -166,7 +169,7 @@ TrueE_test=y["E"][final_test_indeces]
 
 #print("TrueE_test:" ,  TrueE_test)
 #TrueE_test=y["E"][test_indices_smallE_range]
-np.save("TrueE_test.npy",TrueE_test)
+np.save("TrueE_test_40ep_trial.npy",TrueE_test)
 
 # Creating the network
 net = SNDNet(n_input_filters=nb_of_plane).to(device)
@@ -188,7 +191,7 @@ os.system("mkdir 9X0_file")
 #Training
 print("\nNow Trainig the network:")
 # Create a .txt file where we will store some info for graphs
-f=open("NN_performance.txt","a")
+f=open("NN_trial_performance.txt","a")
 f.write("Epoch/Time it took (s)/Loss/Validation energy (%)/Validation distance (%)\n")
 f.close()
 
@@ -203,7 +206,7 @@ class Logger(object):
         print("  validation Energy:\t\t{:.4f} %".format(val_accuracy_1[-1]))
         #print("  validation distance:\t\t{:.4f} %".format(val_accuracy_2[-1]))
 
-        f=open("NN_performance.txt","a")
+        f=open("NN_trial_performance.txt","a")
         f.write("{};{:.3f};".format(epoch + 1, time.time() - start_time))
         f.write("\t{:.6f};".format(train_loss[-1]))
         f.write("\t\t{:.4f}\n".format(val_accuracy_1[-1]))
@@ -248,7 +251,7 @@ def run_training(lr, num_epochs, opt):
 
             #Saving network for each 10 epoch
             if (epoch + 1) % 1 == 0:
-                with open("9X0_file/" + str(epoch) + "_9X0_coordconv_220to380.pt", 'wb') as f:
+                with open("9X0_file/" + str(epoch) + "_9X0_coordconv.pt", 'wb') as f:
                     torch.save(net, f)       
                 lr = lr / 2
                 opt = torch.optim.Adam(net.model.parameters(), lr=lr)
@@ -264,13 +267,13 @@ run_training(lr, num_epochs, opt)
 os.system("mkdir PredE_file")
 
 for i in [0]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv_220to380.pt")
+    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("PredE_file/" + str(i) + "_PredE_test_220to380.npy",ans[:, 0])
+    np.save("MSE_loss/" + str(i) + "_PredE_test_1ep_trial.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 
@@ -280,3 +283,4 @@ for i in [0]:
 #print("[ Top 10 ]")
 #for stat in top_stats[:10]:
 #    print(stat)
+
