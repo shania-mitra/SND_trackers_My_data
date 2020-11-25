@@ -48,7 +48,7 @@ class DataPreprocess(object):
     def __init__(self, parameters):
         self.params = parameters
 
-    def open_shower_file(self, filename, start=0, stop=100, step=1):
+    def open_shower_file(self, filename, start=0, stop=1, step=1):
         """
         Read root file to numpy. Quite slow for big amount of data.
         :param filename:
@@ -83,7 +83,12 @@ class DataPreprocess(object):
                                                             prefixTargetPoint + '.fTrackID',
                                                             prefixTargetPoint + '.fPdgCode'],
                                                   )
+#        print("SHOWERS_DATA_ROOT", showers_data_root)
         return showers_data_root
+
+
+
+
 
     def extract_showers(self, showers_data_root, E_TRHESHOLD=0.0001):
         """
@@ -105,7 +110,7 @@ class DataPreprocess(object):
             fPx_sim, fPy_sim, fPz_sim, fStartX_sim, fStartY_sim, fStartZ_sim, fTime_sim, fLength_sim, \
             fELoss_sim, fDetectorID_sim, fTrackID_sim, fPdgCode_sim = \
                 shower_data_root
-
+#            print("FSTARTX_SIM",fStartX_sim)
             ## CUTS ON ELECTRON
             ele_mask = np.logical_and(fMotherId_mc == -1, np.abs(fPdgCode_mc) == 11)
             if ele_mask.sum() == 0:
@@ -146,6 +151,7 @@ class DataPreprocess(object):
                 'AssociatedMCParticle': fTrackID_sim[mask_sim],
                 'ELoss': fELoss_sim[mask_sim]
             }
+#            print("UTILS.PY(TT_resp)", np.shape(TT_resp['X']))
 
             shower_mc = {
                 'PX': fPx_mc,
@@ -158,11 +164,12 @@ class DataPreprocess(object):
                 'MotherId': fMotherId_mc,
                 'PdgCode': fPdgCode_mc
             }
-
+#            print("UTILS.PY(shower_mc)", np.shape(shower_mc['X']))
             TT_sim.append(TT_resp)
+#            print("TT_RESPONSE HITS/EVENTS(?)", TT_sim)
             showers_mc.append(shower_mc)
             initial_indeces.append(index)
-        #print(no_ele, out_of_tt, low_energy)
+#        print(no_ele, out_of_tt, low_energy)
         return TT_sim, showers_mc, initial_indeces
 
     def check_position(self, z_pos):
@@ -188,11 +195,11 @@ class DataPreprocess(object):
         showers_sim, showers_mc, initial_indeces= self.extract_showers(showers_data_root)
         MC_df = pd.DataFrame(showers_mc)
         TT_df = pd.DataFrame(showers_sim)
-#        print (TT_df)
+#        print ("TT_df", TT_df)
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
                          
-        print(MC_df.shape, TT_df.shape)
+#        print(MC_df.shape, TT_df.shape)
 
         # Remove events, that have hits separated with more then 20ns
         # This is silly cut because of absence of true detector digitisation
@@ -205,7 +212,7 @@ class DataPreprocess(object):
         n_hits = TT_df.X.map(lambda x: len(x))
         TT_df = TT_df[n_hits > n_hits_threshold]
         MC_df = MC_df[n_hits > n_hits_threshold]
-       
+#        print("NO OF HITS IN TT_DF" , TT_df.shape)
        # save MC_df as showers_mc.txt
        # save TT_df as showers_sim.txt
         with open('showers_mc.txt', 'w') as g:
@@ -244,8 +251,11 @@ class DataPreprocess(object):
             nu_params[4].append(np.sqrt(showers_mc[index]['PX'][ele_mask][0]*showers_mc[index]['PX'][ele_mask][0]+showers_mc[index]['PY'][ele_mask][0]*showers_mc[index]['PY'][ele_mask][0])/showers_mc[index]['PZ'][ele_mask][0])
         pd.set_option('display.max_rows', 101, 'display.max_columns', 9)
         nu_params = pd.DataFrame(np.array(nu_params).T, columns=["E","Z","X","Y","THETA"])
-        with open('nu_params.txt', 'w') as f:
-            print( nu_params, file=f)
+#        print("NU_PARAMS:" , nu_params)
+#        with open('nu_params.txt', 'w') as f:
+#            print( nu_params, file=f)
+#        print("TT_DF_PRINT", TT_df['X'])
+ 
         TT_df.to_pickle(os.path.join(save_folder, "tt_cleared.pkl"))
        # unpickled_TT_df = pd.read_pickle("tt_cleared.pkl")
        # print(unpickled_TT_df)

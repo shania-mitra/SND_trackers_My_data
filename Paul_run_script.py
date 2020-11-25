@@ -14,6 +14,7 @@ from tqdm import tqdm
 from IPython import display
 import os
 import gc # Gabage collector interface (to debug stuff)
+#from torchsummary import summary 
 #import tracemalloc
 # Test to see if cuda is available or not + listed the CUDA devices that are available
 try:
@@ -32,11 +33,11 @@ device = torch.device("cuda", 0)
 plt.ioff()
 
 # Here we choose the geometry with 9 time the radiation length
-params = Parameters("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!!!!!!!!
+params = Parameters_reduced("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!!!!!!!!
 processed_file_path = os.path.expandvars("/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
-step_size = 5000    # size of a chunk
+step_size = 3750    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
-file_size = 120000
+file_size = 150000
 n_steps = int(file_size / step_size) # number of chunks
 
 # ----------------------------------------debug ------------------------------------------------------------------------------------
@@ -62,12 +63,12 @@ chunklist_y_full = [] # list of the y_full file of each chunk
 print("\nReading the tt_cleared_reduced.pkl & y_cleared.pkl files by chunk")
 #First 2 
 outpath = processed_file_path + "/{}".format(0)
-#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
-chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
+chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
 chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl")))
 outpath = processed_file_path + "/{}".format(1)
-#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
-chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
+chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl")))
+#chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl")))
 chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl")))
 
 reindex_TT_df = pd.concat([chunklist_TT_df[0],chunklist_TT_df[1]],ignore_index=True)
@@ -82,7 +83,7 @@ reindex_TT_df.to_csv("reindex_TT_df.csv")
 
 for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in terminal
     outpath = processed_file_path + "/{}".format(i+2)
-    chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared.pkl"))) # add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
+    chunklist_TT_df.append(pd.read_pickle(os.path.join(outpath, "tt_cleared_reduced.pkl"))) # add all the tt_cleared.pkl files read_pickle and add to the chunklist_TT_df list
     chunklist_y_full.append(pd.read_pickle(os.path.join(outpath, "y_cleared.pkl"))) # add all the y_cleared.pkl files read_pickle and add to the chunklist_y_full list
     reindex_TT_df = pd.concat([reindex_TT_df,chunklist_TT_df[i+2]], ignore_index=True)
     reindex_y_full = pd.concat([reindex_y_full,chunklist_y_full[i+2]], ignore_index=True)
@@ -92,9 +93,11 @@ for i in tqdm(range(n_steps-2)):  # tqdm: make your loops show a progress bar in
 # reset to empty space
 chunklist_TT_df = []
 chunklist_y_full = []
-#nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
-nb_of_plane = 2
+nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
+print(nb_of_plane)
+#nb_of_plane = 2
 #----------------------------------------- Ploting figure of the 6 component of TT_df
+
 '''
 index=1
 response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
@@ -150,7 +153,7 @@ final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,
 reindex_y_full = []
 
 #batch_size = 512
-batch_size = 300
+batch_size = 150
 
 train_dataset = MyDataset(reindex_TT_df, y, params, train_indeces, n_filters=nb_of_plane)
 train_batch_gen = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -169,16 +172,17 @@ TrueE_test=y["E"][final_test_indeces]
 
 #print("TrueE_test:" ,  TrueE_test)
 #TrueE_test=y["E"][test_indices_smallE_range]
-np.save("TrueE_test_40ep_trial.npy",TrueE_test)
+np.save("TrueE_test_40ep_MSEnorm.npy",TrueE_test)
 
 # Creating the network
 net = SNDNet(n_input_filters=nb_of_plane).to(device)
+#print(summary(net,(2,4,52)))
 
 # Loose rate, num epoch and weight decay parameters of our network backprop actions
 lr = 1e-3
 opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
 #num_epochs = 40
-num_epochs = 1
+num_epochs = 40
 
 train_loss = []
 val_accuracy_1 = []
@@ -191,7 +195,7 @@ os.system("mkdir 9X0_file")
 #Training
 print("\nNow Trainig the network:")
 # Create a .txt file where we will store some info for graphs
-f=open("NN_trial_performance.txt","a")
+f=open("NN_MSE_norm_performance.txt","a")
 f.write("Epoch/Time it took (s)/Loss/Validation energy (%)/Validation distance (%)\n")
 f.close()
 
@@ -206,7 +210,7 @@ class Logger(object):
         print("  validation Energy:\t\t{:.4f} %".format(val_accuracy_1[-1]))
         #print("  validation distance:\t\t{:.4f} %".format(val_accuracy_2[-1]))
 
-        f=open("NN_trial_performance.txt","a")
+        f=open("NN_MSE_norm_performance.txt","a")
         f.write("{};{:.3f};".format(epoch + 1, time.time() - start_time))
         f.write("\t{:.6f};".format(train_loss[-1]))
         f.write("\t\t{:.4f}\n".format(val_accuracy_1[-1]))
@@ -223,8 +227,9 @@ def run_training(lr, num_epochs, opt):
             epoch_loss = 0
             for X_batch, y_batch in tqdm(train_batch_gen, total = int(len(train_indeces) / batch_size)):
 #            for X_batch, y_batch in train_batch_gen:
+            
             # train on batch
-                
+                              
                 loss = net.compute_loss(X_batch, y_batch)
                 #print(loss)
                 loss.backward()
@@ -250,7 +255,7 @@ def run_training(lr, num_epochs, opt):
             logger.plot_losses(epoch, num_epochs, start_time)
 
             #Saving network for each 10 epoch
-            if (epoch + 1) % 1 == 0:
+            if (epoch + 1) % 10 == 0:
                 with open("9X0_file/" + str(epoch) + "_9X0_coordconv.pt", 'wb') as f:
                     torch.save(net, f)       
                 lr = lr / 2
@@ -266,14 +271,14 @@ run_training(lr, num_epochs, opt)
 # Create a directory where to store the prediction files
 os.system("mkdir PredE_file")
 
-for i in [0]:
+for i in [9,19,29,39]:
     net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("MSE_loss/" + str(i) + "_PredE_test_1ep_trial.npy",ans[:, 0])
+    np.save("MSE_loss/" + str(i) + "_PredE_MSELoss_norm.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 
