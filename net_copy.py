@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 import numpy as np
 from bisect import bisect_left
-from utils import CM_TO_MUM
+from utils_copy import CM_TO_MUM
 from coord_conv import CoordConv
 import pandas as pd
 
@@ -26,7 +26,7 @@ class Block(nn.Module):
             self.block.add_module("Pool", nn.MaxPool2d(2))
         self.block.add_module("BN", nn.BatchNorm2d(out_channels))
         self.block.add_module("Act", nn.ReLU())
-        # self.block.add_module("dropout", nn.Dropout(p=0.5))
+        self.block.add_module("dropout", nn.Dropout(p=0.2))
 
     def forward(self, x):
         return self.block(x)
@@ -36,18 +36,20 @@ class SNDNet(nn.Module):
     def __init__(self, n_input_filters):
         super().__init__()
         self.model = nn.Sequential(
-            Block(n_input_filters, 32, pool=True),
+            Block(n_input_filters, 32, pool=False),
             Block(32, 32, pool=True),
             Block(32, 32, pool=True),
             Block(32, 32, pool=True),
-            #Block(32, 32, pool=False),
+#            Block(32, 32, pool=True),
+             
+            Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
-            nn.Linear(128, 1),
-            # nn.ReLU(),
-            # nn.Dropout(p=0.5),
+            nn.Linear(448, 1),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
             # nn.Linear(512, 512),
-            # nn.ReLU(),
+            nn.ReLU(),
             #nn.Linear(1280,2)
         )
 #        self.model.summary()
@@ -169,7 +171,7 @@ def compress_digitize_signal(event, params, filters=1):
            
     return response
 
-def digitize_signal(event, params, filters=2):
+def digitize_signal(event, params, filters=1):
 
     shape = (filters,4,int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
                                    params.snd_params["RESOLUTION"])))

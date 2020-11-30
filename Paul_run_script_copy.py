@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Import Class from utils.py & net.py file
-from utils import DataPreprocess, Parameters, Parameters_reduced
+from utils_copy import DataPreprocess, Parameters, Parameters_reduced
 from net_copy import SNDNet, MyDataset, digitize_signal
 # usful module 
 import torch
@@ -33,10 +33,10 @@ plt.ioff()
 
 # Here we choose the geometry with 9 time the radiation length
 params = Parameters("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!!!!!!!!
-processed_file_path = os.path.expandvars("/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
+processed_file_path = os.path.expandvars("/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed_500step") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
 step_size = 5000    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
-file_size = 120000
+file_size = 100000
 n_steps = int(file_size / step_size) # number of chunks
 
 # ----------------------------------------debug ------------------------------------------------------------------------------------
@@ -149,8 +149,8 @@ final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,
 #reset to empty space
 reindex_y_full = []
 
-#batch_size = 512
-batch_size = 150
+batch_size = 300
+#batch_size = 300
 
 train_dataset = MyDataset(reindex_TT_df, y, params, train_indeces, n_filters=nb_of_plane)
 train_batch_gen = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -169,16 +169,16 @@ TrueE_test=y["E"][final_test_indeces]
 
 #print("TrueE_test:" ,  TrueE_test)
 #TrueE_test=y["E"][test_indices_smallE_range]
-np.save("TrueE_test_40ep_trial.npy",TrueE_test)
+np.save("TrueE_test_opt.npy",TrueE_test)
 
 # Creating the network
 net = SNDNet(n_input_filters=nb_of_plane).to(device)
 
 # Loose rate, num epoch and weight decay parameters of our network backprop actions
-lr = 1e-3
+lr = 1e-2
 opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
 #num_epochs = 40
-num_epochs = 1
+num_epochs = 10
 
 train_loss = []
 val_accuracy_1 = []
@@ -191,7 +191,7 @@ os.system("mkdir 9X0_file")
 #Training
 print("\nNow Trainig the network:")
 # Create a .txt file where we will store some info for graphs
-f=open("NN_trial_performance.txt","a")
+f=open("NN_compressed_opt.txt","a")
 f.write("Epoch/Time it took (s)/Loss/Validation energy (%)/Validation distance (%)\n")
 f.close()
 
@@ -206,7 +206,7 @@ class Logger(object):
         print("  validation Energy:\t\t{:.4f} %".format(val_accuracy_1[-1]))
         #print("  validation distance:\t\t{:.4f} %".format(val_accuracy_2[-1]))
 
-        f=open("NN_trial_performance.txt","a")
+        f=open("NN_compressed_opt.txt","a")
         f.write("{};{:.3f};".format(epoch + 1, time.time() - start_time))
         f.write("\t{:.6f};".format(train_loss[-1]))
         f.write("\t\t{:.4f}\n".format(val_accuracy_1[-1]))
@@ -250,8 +250,8 @@ def run_training(lr, num_epochs, opt):
             logger.plot_losses(epoch, num_epochs, start_time)
 
             #Saving network for each 10 epoch
-            if (epoch + 1) % 1 == 0:
-                with open("9X0_file/" + str(epoch) + "_9X0_coordconv.pt", 'wb') as f:
+            if (epoch + 1) % 10 == 0:
+                with open("9X0_file/" + str(epoch) + "compressed_opt_9X0_coordconv.pt", 'wb') as f:
                     torch.save(net, f)       
                 lr = lr / 2
                 opt = torch.optim.Adam(net.model.parameters(), lr=lr)
@@ -266,14 +266,14 @@ run_training(lr, num_epochs, opt)
 # Create a directory where to store the prediction files
 os.system("mkdir PredE_file")
 
-for i in [0]:
-    net = torch.load("9X0_file/" + str(i) + "_9X0_coordconv.pt")
+for i in [9,19,29,39]:
+    net = torch.load("9X0_file/" + str(i) + "compressed_opt_9X0_coordconv.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("MSE_loss/" + str(i) + "_PredE_test_1ep_trial.npy",ans[:, 0])
+    np.save("MSE_norm_compressed/" + str(i) + "_PredE_test_compressed_opt.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 
@@ -283,4 +283,5 @@ for i in [0]:
 #print("[ Top 10 ]")
 #for stat in top_stats[:10]:
 #    print(stat)
+
 
