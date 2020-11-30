@@ -1,3 +1,4 @@
+from torchsummary import summary
 from operator import truediv
 import torch
 from torch import nn
@@ -19,14 +20,14 @@ class Block(nn.Module):
         super().__init__()
         self.block = nn.Sequential()
 #        self.block.add_module("conv", CoordConv(in_channels, out_channels,
-#                                                kernel_size=(k_size, k_size), stride=1, with_r=True))
+#                                                kernel_size=(k_size,k_size), stride=1, with_r=True,padding=1))
         self.block.add_module("conv",nn.Conv2d(in_channels, out_channels,
                                                 kernel_size=(k_size, k_size), stride=1, padding=1))
         if pool:
-            self.block.add_module("Pool", nn.MaxPool2d(2))
+            self.block.add_module("Pool", nn.MaxPool2d((2)))
         self.block.add_module("BN", nn.BatchNorm2d(out_channels))
         self.block.add_module("Act", nn.ReLU())
-        self.block.add_module("dropout", nn.Dropout(p=0.2))
+        self.block.add_module("dropout", nn.Dropout(p=0.5))
 
     def forward(self, x):
         return self.block(x)
@@ -36,23 +37,23 @@ class SNDNet(nn.Module):
     def __init__(self, n_input_filters):
         super().__init__()
         self.model = nn.Sequential(
-            Block(n_input_filters, 32, pool=False),
+            Block(n_input_filters, 32, pool=True),
             Block(32, 32, pool=True),
             Block(32, 32, pool=True),
             Block(32, 32, pool=True),
-#            Block(32, 32, pool=True),
+            Block(32, 32, pool=True),
              
             Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
-            nn.Linear(448, 1),
+            nn.Linear(2176, 1),
             nn.ReLU(),
             nn.Dropout(p=0.5),
             # nn.Linear(512, 512),
             nn.ReLU(),
             #nn.Linear(1280,2)
         )
-#        self.model.summary()
+        summary(self.model, input_size=(2, 4, 4208))
     def compute_loss(self, X_batch, y_batch):
         X_batch = X_batch.to(self.device)
         y_batch = y_batch.to(self.device)

@@ -36,7 +36,7 @@ params = Parameters("4X0")  #!!!!!!!!!!!!!!!!!!!!!CHANGE THE DIMENTION !!!!!!!!!
 processed_file_path = os.path.expandvars("/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed_500step") #!!!!!!!!!!!!!!!!!!!!!CHANGE THE PATH !!!!!!!!!!!!!!!!
 step_size = 5000    # size of a chunk
 #file_size = 180000  # size of the BigFile.root file
-file_size = 100000
+file_size = 10000
 n_steps = int(file_size / step_size) # number of chunks
 
 # ----------------------------------------debug ------------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ def indices_by_condition(df, train_indices, column_name, lower_bound, upper_boun
                
 
 final_test_indeces = indices_by_condition(reindex_y_full,train_indeces,'E', 200,400)
-#print(len(final_test_indeces))
+print(final_test_indeces)
 #print(len(train_indeces))
 
 
@@ -175,8 +175,8 @@ np.save("TrueE_test_opt.npy",TrueE_test)
 net = SNDNet(n_input_filters=nb_of_plane).to(device)
 
 # Loose rate, num epoch and weight decay parameters of our network backprop actions
-lr = 1e-2
-opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.01)
+lr = 1e-3
+opt = torch.optim.Adam(net.model.parameters(), lr=lr, weight_decay=0.1)
 #num_epochs = 40
 num_epochs = 10
 
@@ -191,7 +191,7 @@ os.system("mkdir 9X0_file")
 #Training
 print("\nNow Trainig the network:")
 # Create a .txt file where we will store some info for graphs
-f=open("NN_compressed_opt.txt","a")
+f=open("NN_compressed_coordconv.txt","a")
 f.write("Epoch/Time it took (s)/Loss/Validation energy (%)/Validation distance (%)\n")
 f.close()
 
@@ -206,7 +206,7 @@ class Logger(object):
         print("  validation Energy:\t\t{:.4f} %".format(val_accuracy_1[-1]))
         #print("  validation distance:\t\t{:.4f} %".format(val_accuracy_2[-1]))
 
-        f=open("NN_compressed_opt.txt","a")
+        f=open("NN_compressed_coordconv.txt","a")
         f.write("{};{:.3f};".format(epoch + 1, time.time() - start_time))
         f.write("\t{:.6f};".format(train_loss[-1]))
         f.write("\t\t{:.4f}\n".format(val_accuracy_1[-1]))
@@ -222,11 +222,12 @@ def run_training(lr, num_epochs, opt):
             net.model.train(True)
             epoch_loss = 0
             for X_batch, y_batch in tqdm(train_batch_gen, total = int(len(train_indeces) / batch_size)):
+     
 #            for X_batch, y_batch in train_batch_gen:
             # train on batch
-                
+                print(y_batch)           
                 loss = net.compute_loss(X_batch, y_batch)
-                #print(loss)
+                print(loss)
                 loss.backward()
                 opt.step()
                 opt.zero_grad()
@@ -238,6 +239,7 @@ def run_training(lr, num_epochs, opt):
             with torch.no_grad():
                 for (X_batch, y_batch) in tqdm(test_batch_gen, total = int(len(final_test_indeces) / batch_size)):
                     logits = net.predict(X_batch)
+                    print(logits)
                     y_pred = logits.cpu().detach().numpy()
                     y_score.extend(y_pred)
 
@@ -251,7 +253,7 @@ def run_training(lr, num_epochs, opt):
 
             #Saving network for each 10 epoch
             if (epoch + 1) % 10 == 0:
-                with open("9X0_file/" + str(epoch) + "compressed_opt_9X0_coordconv.pt", 'wb') as f:
+                with open("9X0_file/" + str(epoch) + "_compressed_coordconv_9X0_coordconv.pt", 'wb') as f:
                     torch.save(net, f)       
                 lr = lr / 2
                 opt = torch.optim.Adam(net.model.parameters(), lr=lr)
@@ -267,13 +269,13 @@ run_training(lr, num_epochs, opt)
 os.system("mkdir PredE_file")
 
 for i in [9,19,29,39]:
-    net = torch.load("9X0_file/" + str(i) + "compressed_opt_9X0_coordconv.pt")
+    net = torch.load("9X0_file/" + str(i) + "_compressed_coordconv_9X0_coordconv.pt")
     preds = []
     with torch.no_grad():
         for (X_batch, y_batch) in test_batch_gen:
             preds.append(net.predict(X_batch))
     ans = np.concatenate([p.detach().cpu().numpy() for p in preds])
-    np.save("MSE_norm_compressed/" + str(i) + "_PredE_test_compressed_opt.npy",ans[:, 0])
+    np.save("MSE_norm_compressed/" + str(i) + "_PredE_test_compressed_coordconv.npy",ans[:, 0])
     print("Save Prediction for epoch "+ str(i))
 
 
