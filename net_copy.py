@@ -22,16 +22,15 @@ class Block(nn.Module):
 #        self.block.add_module("conv", CoordConv(in_channels, out_channels,
 #                                                kernel_size=(k_size,k_size), stride=1, with_r=True,padding=1))
         self.block.add_module("conv",nn.Conv2d(in_channels, out_channels,
-                                                kernel_size=(k_size, k_size), stride=1, padding=1))
+                                                kernel_size=(2,4), stride=1, padding=1))
         if pool:
             self.block.add_module("Pool", nn.MaxPool2d((2)))
         self.block.add_module("BN", nn.BatchNorm2d(out_channels))
         self.block.add_module("Act", nn.ReLU())
-        self.block.add_module("dropout", nn.Dropout(p=0.5))
+        self.block.add_module("dropout", nn.Dropout(p=0.2))
 
     def forward(self, x):
         return self.block(x)
-
 
 class SNDNet(nn.Module):
     def __init__(self, n_input_filters):
@@ -39,28 +38,28 @@ class SNDNet(nn.Module):
         self.model = nn.Sequential(
             Block(n_input_filters, 32, pool=True),
             Block(32, 32, pool=True),
-            Block(32, 32, pool=True),
-            Block(32, 32, pool=True),
-            Block(32, 32, pool=True),
+            Block(32, 64, pool=True),
+            Block(64, 64, pool=True),
+#            Block(32, 32, pool=True),
              
-            Block(32, 32, pool=True),
+#            Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
-            nn.Linear(2176, 1),
-            nn.ReLU(),
-            nn.Dropout(p=0.5),
+            nn.Linear(8320, 1),
+#            nn.ReLU(),
+#            nn.Dropout(p=0.2),
             # nn.Linear(512, 512),
-            nn.ReLU(),
+#            nn.ReLU(),
             #nn.Linear(1280,2)
         )
-        summary(self.model, input_size=(2, 4, 4208))
+#        summary(self.model, input_size=(2, 4, 4208))
+
     def compute_loss(self, X_batch, y_batch):
         X_batch = X_batch.to(self.device)
         y_batch = y_batch.to(self.device)
-        logits = self.model(X_batch)
-        
-        mse_loss_tensor = F.mse_loss(logits, y_batch, reduction='none')
-        
+
+        logits = self.model(X_batch)        
+        mse_loss_tensor = F.mse_loss(logits, y_batch, reduction='none')        
         norm_mse_loss_tensor = torch.div(mse_loss_tensor,y_batch)
         return norm_mse_loss_tensor.mean()
 
@@ -238,6 +237,6 @@ def digitize_signal(event, params, filters=1):
         response[1,1,shape[1] - y_two - 1] += 1
         response[1,2,shape[1] - y_three - 1] += 1
         response[1,3,shape[1] - y_four - 1] += 1
-    response = (response>=1).astype(int)    
+#    response = (response>=1).astype(int)    
 #    print(response)
     return response    

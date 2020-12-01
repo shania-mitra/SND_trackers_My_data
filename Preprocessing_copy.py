@@ -21,7 +21,7 @@ import argparse
 from ROOT import TH1F, TFile
 from PIL import Image
 # Turn off interactive plotting: for long run it makes screwing up everything
- #plt.ioff()
+plt.ion()
 
 # ---------------------------------------------------- Barycenter fonction -------------------------------------------------------------------------------------------------
 
@@ -231,6 +231,7 @@ if(args.step=="step2"):
         plt.subplot(1,nb_of_plane,i+1)
         plt.imshow(response[i].astype("uint8") * 255, cmap='gray')
     plt.show()
+
     '''
     plt.savefig("event.png")
     img_file = Image.open('event.png')
