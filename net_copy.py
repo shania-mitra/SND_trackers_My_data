@@ -24,10 +24,10 @@ class Block(nn.Module):
         self.block.add_module("conv",nn.Conv2d(in_channels, out_channels,
                                                 kernel_size=(2,4), stride=1, padding=1))
         if pool:
-            self.block.add_module("Pool", nn.MaxPool2d((2)))
-        self.block.add_module("BN", nn.BatchNorm2d(out_channels))
+            self.block.add_module("Pool", nn.MaxPool2d((1,4)))
+#        self.block.add_module("BN", nn.BatchNorm2d(out_channels))
         self.block.add_module("Act", nn.ReLU())
-        self.block.add_module("dropout", nn.Dropout(p=0.2))
+ #       self.block.add_module("dropout", nn.Dropout(p=0.5))
 
     def forward(self, x):
         return self.block(x)
@@ -39,20 +39,18 @@ class SNDNet(nn.Module):
             Block(n_input_filters, 32, pool=True),
             Block(32, 32, pool=True),
             Block(32, 64, pool=True),
-            Block(64, 64, pool=True),
-#            Block(32, 32, pool=True),
-             
+            Block(64, 64, pool=False),             
 #            Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
-            nn.Linear(8320, 1),
-#            nn.ReLU(),
-#            nn.Dropout(p=0.2),
-            # nn.Linear(512, 512),
-#            nn.ReLU(),
+            nn.Linear(448, 1),
+            #nn.ReLU(),
+#            nn.Dropout(p=0.5),
+            #nn.Linear(512, 512),
+            #nn.ReLU(),
             #nn.Linear(1280,2)
         )
-#        summary(self.model, input_size=(2, 4, 4208))
+
 
     def compute_loss(self, X_batch, y_batch):
         X_batch = X_batch.to(self.device)
@@ -60,8 +58,8 @@ class SNDNet(nn.Module):
 
         logits = self.model(X_batch)        
         mse_loss_tensor = F.mse_loss(logits, y_batch, reduction='none')        
-        norm_mse_loss_tensor = torch.div(mse_loss_tensor,y_batch)
-        return norm_mse_loss_tensor.mean()
+#        norm_mse_loss_tensor = torch.div(mse_loss_tensor,y_batch)
+        return mse_loss_tensor.mean()
 
 
 
@@ -71,8 +69,6 @@ class SNDNet(nn.Module):
 
     @property
     def device(self):
-   #     for parameters in self.model.parameters():
-    #        print (parameters)
         return next(self.model.parameters()).device
 
 
@@ -171,7 +167,7 @@ def compress_digitize_signal(event, params, filters=1):
            
     return response
 
-def digitize_signal(event, params, filters=1):
+def digitize_signal(event, params, filters=2):
 
     shape = (filters,4,int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
                                    params.snd_params["RESOLUTION"])))
@@ -216,10 +212,7 @@ def digitize_signal(event, params, filters=1):
                                                        params.snd_params["RESOLUTION"]).astype(int),
                                              np.floor((event_comp_x['z4'] + params.snd_params["X_HALF_SIZE"])*CM_TO_MUM/
                                                        params.snd_params["RESOLUTION"]).astype(int)):
-#        print(x_one)
-#        print(x_two)
-#        print(x_three)
-#        print(x_four)
+
         response[0,0,x_one] +=1
         response[0,1, x_two] += 1
         response[0,2,x_three] +=1
@@ -237,6 +230,7 @@ def digitize_signal(event, params, filters=1):
         response[1,1,shape[1] - y_two - 1] += 1
         response[1,2,shape[1] - y_three - 1] += 1
         response[1,3,shape[1] - y_four - 1] += 1
+
+#for changing from grayscale to binary b or w
 #    response = (response>=1).astype(int)    
-#    print(response)
     return response    
