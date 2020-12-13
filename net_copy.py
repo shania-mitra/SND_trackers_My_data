@@ -38,8 +38,8 @@ class SNDNet(nn.Module):
         self.model = nn.Sequential(
             Block(n_input_filters, 32, pool=True),
             Block(32, 32, pool=True),
-            Block(32, 64, pool=True),
-            Block(64, 64, pool=False),             
+            Block(32, 32, pool=True),
+#            Block(64, 64, pool=False),             
 #            Block(32, 32, pool=True),
             #Block(128, 128, pool=False),
             Flatten(),
