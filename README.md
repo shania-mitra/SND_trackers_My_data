@@ -23,6 +23,18 @@ The other geometry configuration (9X0, 5X0, ...) were used for previous analysis
 
 The other files (.swp, Debug.py, parameters.py) aren't necesarry.
 
+## Instructions by Shania
+
+The files needed for producing and using the side-view images for the neural net are:
+
+-net_copy.py
+
+-Preprocessing_copy.py (also contains commented out code for inserting ghost hits in images in step 6)
+
+-Paul_run_script_copy.py
+
+-utils_copy.py
+
 
 ## Useful links
  - FairShip: https://github.com/ShipSoft/FairShip
