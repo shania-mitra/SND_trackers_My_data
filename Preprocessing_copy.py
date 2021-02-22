@@ -1,10 +1,13 @@
 # --------------------------------------------------------------IMPORT AND OPTIONS FOR PREPROCESSING ----------------------------------------------------------------------
 # Import Class from utils.py & net.py file
+
 from utils_copy import DataPreprocess, Parameters, Parameters_reduced
 from net_copy import digitize_signal
 
 # Import usfull module 
+
 from matplotlib import pylab as plt
+#plt.switch_backend('TKAgg')
 import numpy as np
 import root_numpy
 import sys
@@ -21,7 +24,7 @@ import argparse
 from ROOT import TH1F, TFile
 from PIL import Image
 # Turn off interactive plotting: for long run it makes screwing up everything
-plt.ion()
+#plt.ioff()
 
 # ---------------------------------------------------- Barycenter fonction -------------------------------------------------------------------------------------------------
 
@@ -164,15 +167,15 @@ params = Parameters("4X0")
 
 # Path to the raw Data root file and the pickle file
 filename = "/dcache/bfys/smitra/DS5/DS5.root"
-#loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed"
-loc_of_pkl_file = "/dcache/bfys/smitra/DS5/few_events_ship_tt_processed"
+loc_of_pkl_file = "/dcache/bfys/smitra/DS5/new_ship_tt_processed_data_forcompressed"
+#loc_of_pkl_file = "/dcache/bfys/smitra/DS5/few_events_ship_tt_processed"
 processed_file_path = os.path.expandvars(loc_of_pkl_file)
 name_of_angle_file = "results/Angle_histo.root"
 name_of_red_dim_hist = "results/XY_histo.root"
 
 # Usualy, Data file is too large to be read in one time, that the reason why we read it by "chunk" of step_size events
-step_size = 20    # number of event in a chunk
-file_size = 1500  # number of events to be analyse. Maximum number for DS5.root is 200'000
+step_size = 3750    # number of event in a chunk
+file_size = 150000  # number of events to be analyse. Maximum number for DS5.root is 200'000
 
 n_steps = int(file_size / step_size) # number of chunks
 #nb_of_plane = len(params.snd_params[params.configuration]["TT_POSITIONS"])
@@ -222,8 +225,7 @@ if(args.step=="step2"):
     #----------------------------------------- Ploting figure of the 6 component of TT_df --------------------------------------------------------------------------------------
 
     #index of the event you want to plot the signal
-    index= 2
-
+    index= 7
     response = digitize_signal(reindex_TT_df.iloc[index], params=params, filters=nb_of_plane)
     print("Response shape :",response.shape) # gives (6,150,185) for resolution =700 and (6,525,645) for resolution =200 and (6, 75, 93) for resolution= 1400 // (6, 724, 865), res 1050 
     plt.figure(figsize=(18,nb_of_plane))
@@ -446,6 +448,7 @@ if(args.step=="step6"):
                 'ELoss': reindex_TT_df.iloc[i+index]['ELoss'][bool_XY_plane]
             }
 
+#next chunk of commented out code for inserting ghost hits in images
             '''
             PX = []
             PY = []

@@ -32,6 +32,7 @@ class Block(nn.Module):
     def forward(self, x):
         return self.block(x)
 
+#simplified neural net structure, optimised for side-view images
 class SNDNet(nn.Module):
     def __init__(self, n_input_filters):
         super().__init__()
@@ -167,6 +168,9 @@ def compress_digitize_signal(event, params, filters=1):
            
     return response
 
+
+
+#digitize_signal to get side x vs z and y vs z view. To get original front view, change name of compress_digitize_signal to digitize_signal and this function to compress_digitize_signal and run as per usual
 def digitize_signal(event, params, filters=2):
 
     shape = (filters,4,int(np.ceil(params.snd_params["X_HALF_SIZE"] * 2 * CM_TO_MUM /
